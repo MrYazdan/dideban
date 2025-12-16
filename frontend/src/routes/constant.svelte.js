@@ -4,7 +4,7 @@ export const MACHINES = [
         name: 'Main',
         stats: [
             {
-                name: 'Cpu',
+                name: 'cpu',
                 updateAt: Date.now() - 1000 * 60 * 60,
                 total: '100 GB',
                 detail: [
@@ -61,7 +61,7 @@ export const MACHINES = [
                 ],
             },
             {
-                name: 'Memory',
+                name: 'memory',
                 updateAt: Date.now() - 1000 * 60 * 60,
                 total: '100 GB',
                 detail: [
@@ -118,7 +118,7 @@ export const MACHINES = [
                 ],
             },
             {
-                name: 'Hard',
+                name: 'hard',
                 updateAt: Date.now() - 1000 * 60 * 60,
                 total: '100 GB',
                 detail: [
@@ -238,7 +238,7 @@ export const MACHINES = [
         name: 'Beta',
         stats: [
             {
-                name: 'Cpu',
+                name: 'cpu',
                 updateAt: Date.now() - 1000 * 60 * 60,
                 total: '100 GB',
                 detail: [
@@ -295,7 +295,7 @@ export const MACHINES = [
                 ],
             },
             {
-                name: 'Memory',
+                name: 'memory',
                 updateAt: Date.now() - 1000 * 60 * 60,
                 total: '100 GB',
                 detail: [
@@ -352,7 +352,7 @@ export const MACHINES = [
                 ],
             },
             {
-                name: 'Hard',
+                name: 'hard',
                 updateAt: Date.now() - 1000 * 60 * 60,
                 total: '100 GB',
                 detail: [

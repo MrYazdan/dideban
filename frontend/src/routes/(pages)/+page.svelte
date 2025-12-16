@@ -1,8 +1,8 @@
 <script>
     import { fade } from 'svelte/transition';
-    import { MACHINES } from '../constant.svelte';
     import formatTimeAgo from '../../utils/formatFullDate';
     import formatFullDate from '../../utils/formatFullDate';
+    import { MACHINES } from '../constant.svelte';
     let width = $state(0);
     let itemHoveredDetail = $state(null);
     let activeBar = $state(null);
@@ -20,7 +20,7 @@
 <svelte:window bind:innerWidth={width} />
 
 <div class="w-full h-auto flex flex-col">
-    <h2 class="h-[50px]! text-2xl xl:text-3xl w-full flex items-center border-b border-[#e5e5e5] mb-4">Machines</h2>
+    <h2 class="h-12.5! text-2xl xl:text-3xl w-full flex items-center border-b border-[#e5e5e5] mb-4">Machines</h2>
 
     {#each MACHINES as item (item.name)}
         <div class="w-full h-full pb-8">
@@ -28,7 +28,7 @@
             <div class="w-full flex flex-col gap-5">
                 {#each item.stats as stat (stat.name)}
                     <div
-                        class="relative flex flex-col lg:flex-row h-[110px] rounded-lg md:border md:border-[#e5e5e5] md:px-5 md:py-3">
+                        class="relative flex flex-col lg:flex-row h-27.5 rounded-lg md:border md:border-[#e5e5e5] md:px-5 md:py-3">
                         <div class="absolute top-3.5 end-0 md:end-5 md:top-2 flex gap-1 justify-start items-start">
                             <div class="text-gray-500 text-xs flex items-baseline gap-2">
                                 <div
@@ -43,7 +43,7 @@
                         </div>
 
                         <h4
-                            class="justify-start my-auto text-xl h-fit border-s-3 ps-2 w-[120px] {stat.detail[
+                            class="justify-start my-auto text-xl h-fit border-s-3 ps-2 w-30 capitalize {stat.detail[
                                 stat.detail.length - 1
                             ]?.loaded < 65
                                 ? 'border-s-green-700'
@@ -122,8 +122,9 @@
                         </div>
                     </div>{/each}
             </div>
-            <a title="{item.name} detail" href="/machines/{item.name.toLocaleLowerCase()}" class="">
+            <a title="{item.name} detail" href="/machine/{item.name.toLocaleLowerCase()}" class="">
                 <img width="30" class="rtl:rotate-180 ms-auto mt-4" src="/icons/direction.png" alt="direction" />
             </a>
-        </div>{/each}
+        </div>
+    {/each}
 </div>
