@@ -1,7 +1,7 @@
 export const MACHINES = [
     {
         id: 1,
-        name: 'Main',
+        agent_id: 'Main',
         stats: [
             {
                 name: 'cpu',
@@ -235,7 +235,7 @@ export const MACHINES = [
     },
     {
         id: 2,
-        name: 'Beta',
+        agent_id: 'Beta',
         stats: [
             {
                 name: 'cpu',

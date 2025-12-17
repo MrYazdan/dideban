@@ -1,10 +1,13 @@
 <script>
+    import UptimeChart from './../../../../components/common/UptimeChart.svelte';
     import { fade } from 'svelte/transition';
     import formatTimeAgo from '../../../../utils/formatTimeAgo.svelte';
     import formatFullDate from '../../../../utils/formatFullDate.js';
     import { MACHINE } from './constant.svelte.js';
     import { page } from '$app/stores';
     import Chart from '../../../../components/common/Chart.svelte';
+    import InitialChart from '../../../../components/common/InitialChart.svelte';
+    import StrokedGaugeChart from '../../../../components/common/StrokedGaugeChart.svelte';
 
     let width = $state(0);
     let itemHoveredDetail = $state(null);
@@ -12,6 +15,16 @@
     let isMobile = $derived(width < 640);
     let visibleSeries = $state(Object.fromEntries(MACHINE.stats.map(stat => [stat.name, true])));
     let filteredStats = $derived(MACHINE.stats.filter(status => visibleSeries[status.name]));
+    let activeRange = $state('1m');
+    const githubdata = {
+        series: [
+            [1454976000000, 5],
+            [1455062400000, 3],
+            [1455148800000, 6],
+            [1455235200000, 2],
+            // ...
+        ],
+    };
 
     function toggle(name) {
         const activeCount = Object.values(visibleSeries).filter(Boolean).length;
@@ -27,19 +40,74 @@
 
 <svelte:window bind:innerWidth={width} />
 
-<div class="w-full h-auto flex flex-col gap-5 pb-5 relative">
+<div class="w-full h-auto flex flex-col gap-4 pb-3 relative">
     <h2 class="h-12.5! text-2xl w-full flex items-center border-b border-[#e5e5e5] capitalize">
         {$page.url.pathname.split('/')[2]}
     </h2>
 
-    <div
-        class="flex justify-center items-center gap-2 [&>button]:cursor-pointer bg-[#f5f5f5] w-fit p-2 rounded-lg [&>button]:rounded-md [&>button]:px-4 [&>button]:py-2">
-        {#each Object.keys(visibleSeries) as option}
-            <button class="capitalize {visibleSeries[option] ? 'bg-[#fefefe] ' : ''}" onclick={() => toggle(option)}
-                >{option}</button>
-        {/each}
+    <div class="w-full">
+        <div
+            class="flex justify-center items-center gap-2 [&>button]:cursor-pointer bg-[#f5f5f5] w-fit p-2 rounded-lg [&>button]:rounded-md [&>button]:px-4 [&>button]:py-2">
+            {#each Object.keys(visibleSeries) as option}
+                <button class="capitalize {visibleSeries[option] ? 'bg-[#fefefe] ' : ''}" onclick={() => toggle(option)}
+                    >{option}</button>
+            {/each}
+        </div>
     </div>
 
+    <div
+        class="grid grid-cols-3 justify-center items-start gap-2 w-full h-auto [&>div]:px-4 [&>div]:pt-4 [&>div]:border [&>div]:border-[#e5e5e5] [&>div]:rounded-lg">
+        <div class="flex-1 flex flex-col gap-1 justify-start items-start shadow-lg">
+            <div class="flex gap-4 text-4xl font-semibold items-center">
+                <div class="p-2 rounded-lg">
+                    <img width="50" src="/icons/cpu.png" alt="cpu" />
+                </div>
+                <span>CPU</span>
+            </div>
+
+            <InitialChart />
+
+            <div class="w-full flex justify-between items-center">
+                <StrokedGaugeChart />
+                <StrokedGaugeChart />
+                <StrokedGaugeChart />
+            </div>
+        </div>
+        <div class="flex-1 flex flex-col gap-1 justify-start items-start shadow-lg">
+            <div class="flex gap-4 text-4xl font-semibold items-center">
+                <div class="p-2 rounded-lg">
+                    <img width="50" src="/icons/cpu.png" alt="cpu" />
+                </div>
+                <span>CPU</span>
+            </div>
+
+            <InitialChart />
+
+            <div class="w-full flex justify-between items-center">
+                <StrokedGaugeChart />
+                <StrokedGaugeChart />
+                <StrokedGaugeChart />
+            </div>
+        </div>
+        <div class="flex-1 flex flex-col gap-1 justify-start items-start shadow-lg">
+            <div class="flex gap-4 text-4xl font-semibold items-center">
+                <div class="p-2 rounded-lg">
+                    <img width="50" src="/icons/cpu.png" alt="cpu" />
+                </div>
+                <span>CPU</span>
+            </div>
+
+            <InitialChart />
+
+            <div class="w-full flex justify-between items-center">
+                <StrokedGaugeChart />
+                <StrokedGaugeChart />
+                <StrokedGaugeChart />
+            </div>
+        </div>
+    </div>
+
+    <UptimeChart {githubdata} />
     {#if Object.values(visibleSeries).some(item => item)}
         <Chart
             {isMobile}
@@ -50,7 +118,7 @@
             }))} />
 
         {#each filteredStats as status}
-            <div class="w-full flex flex-col gap-5 relative">
+            <div class="w-full flex flex-col gap-5 relative shadow-md hover: transition-all">
                 <div
                     class="relative flex flex-col lg:flex-row h-27.5 rounded-lg md:border md:border-[#e5e5e5] md:px-5 md:py-3">
                     <!-- status indicator -->

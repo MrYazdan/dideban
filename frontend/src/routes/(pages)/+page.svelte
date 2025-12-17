@@ -22,9 +22,9 @@
 <div class="w-full h-auto flex flex-col">
     <h2 class="h-12.5! text-2xl xl:text-3xl w-full flex items-center border-b border-[#e5e5e5] mb-4">Machines</h2>
 
-    {#each MACHINES as item (item.name)}
+    {#each MACHINES as item (item.agent_id)}
         <div class="w-full h-full pb-8">
-            <h2 class="text-2xl mb-4"># {item.name}</h2>
+            <h2 class="text-2xl mb-4"># {item.agent_id}</h2>
             <div class="w-full flex flex-col gap-5">
                 {#each item.stats as stat (stat.name)}
                     <div
@@ -122,7 +122,7 @@
                         </div>
                     </div>{/each}
             </div>
-            <a title="{item.name} detail" href="/machine/{item.name.toLocaleLowerCase()}" class="">
+            <a title="{item.agent_id} detail" href="/machine/{item.agent_id.toLocaleLowerCase()}">
                 <img width="30" class="rtl:rotate-180 ms-auto mt-4" src="/icons/direction.png" alt="direction" />
             </a>
         </div>

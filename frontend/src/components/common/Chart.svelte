@@ -153,4 +153,4 @@
     });
 </script>
 
-<div bind:this={chartEl} class="w-full border overflow-hidden rounded-lg border-[#e5e5e5] pe-4 py-4"></div>
+<div bind:this={chartEl} class="w-full border overflow-hidden rounded-lg border-[#e5e5e5] pe-4 py-4 shadow-lg"></div>
