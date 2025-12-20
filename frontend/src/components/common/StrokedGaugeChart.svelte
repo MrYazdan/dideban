@@ -65,4 +65,4 @@
     });
 </script>
 
-<div class="w-full max-w-47 m-auto" bind:this={chartEl}></div>
+<div class="w-fit max-w-47 m-auto" bind:this={chartEl}></div>

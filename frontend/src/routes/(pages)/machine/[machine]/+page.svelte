@@ -14,8 +14,8 @@
     let itemHoveredDetail = $state(null);
     let activeBar = $state(null);
     let isMobile = $derived(width < 640);
-    let visibleSeries = $state(Object.fromEntries(MACHINE.stats.map(stat => [stat.name, true])));
-    let filteredStats = $derived(MACHINE.stats.filter(status => visibleSeries[status.name]));
+    // let visibleSeries = $state(Object.fromEntries(MACHINE.stats.map(stat => [stat.name, true])));
+    // let filteredStats = $derived(MACHINE.stats.filter(status => visibleSeries[status.name]));
     let activeRange = $state('1m');
     const githubdata = {
         series: [
@@ -27,16 +27,16 @@
         ],
     };
 
-    function toggle(name) {
-        const activeCount = Object.values(visibleSeries).filter(Boolean).length;
+    // function toggle(name) {
+    //     const activeCount = Object.values(visibleSeries).filter(Boolean).length;
 
-        if (activeCount === 1 && visibleSeries[name]) return;
+    //     if (activeCount === 1 && visibleSeries[name]) return;
 
-        visibleSeries = {
-            ...visibleSeries,
-            [name]: !visibleSeries[name],
-        };
-    }
+    //     visibleSeries = {
+    //         ...visibleSeries,
+    //         [name]: !visibleSeries[name],
+    //     };
+    // }
 </script>
 
 <svelte:window bind:innerWidth={width} />
@@ -45,7 +45,7 @@
     <h2 class="h-12.5! text-2xl w-full flex items-center border-b border-[#e5e5e5] capitalize">
         {$page.url.pathname.split('/')[2]}
     </h2>
-
+    <!-- 
     <div class="w-full">
         <div
             class="flex justify-center items-center gap-2 [&>button]:cursor-pointer bg-[#f5f5f5] w-fit p-2 rounded-lg [&>button]:rounded-md [&>button]:px-4 [&>button]:py-2">
@@ -54,7 +54,7 @@
                     >{option}</button>
             {/each}
         </div>
-    </div>
+    </div> -->
 
     <div
         class="grid grid-cols-3 justify-center items-start gap-2 w-full h-auto [&>div]:px-4 [&>div]:pt-4 [&>div]:border [&>div]:border-[#e5e5e5] [&>div]:rounded-lg">
@@ -66,17 +66,43 @@
                 <span>CPU</span>
 
                 <div class="ms-auto pe-2 flex gap-2 justify-center items-start text-sm pb-2">
-                    <span class="text-[27px] text-red-700">27%</span>
+                    <span
+                        class="text-[27px] {MACHINE.cpu[MACHINE.cpu.length - 1].usage_percent
+                            ? MACHINE.cpu[MACHINE.cpu.length - 1].usage_percent < 65
+                                ? 'text-green-700'
+                                : MACHINE.cpu[MACHINE.cpu.length - 1].usage_percent < 85
+                                  ? 'text-yellow-500'
+                                  : 'text-red-700'
+                            : 'bg-black/20'}">{MACHINE.cpu[MACHINE.cpu.length - 1].usage_percent} %</span>
                     <img width="40" height="40" src="/icons/chart.png" alt="chart" />
                 </div>
             </div>
+            <div class="w-full flex justify-start my-auto px-3 mt-5">
+                <div class="flex gap-1.5 items-start">
+                    {#each isMobile ? MACHINE.cpu.slice(-28) : MACHINE.cpu as detail}
+                        <div
+                            class="h-10 min-w-[8.4px] rounded-full cursor-pointer transition-all {detail.usage_percent
+                                ? detail.usage_percent < 65
+                                    ? 'bg-green-700 h-5!'
+                                    : detail.usage_percent < 85
+                                      ? 'bg-yellow-500 h-7!'
+                                      : 'bg-red-700 h-10!'
+                                : 'bg-black/20'}">
+                            <div
+                                class="opacity-0 group-hover:opacity-100 absolute top-10 lg:top-12 start-1/2 -translate-x-1/2 text-gray-400 text-xs">
+                                {formatFullDate(detail.timestamp_ms)}
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </div>
 
-            <InitialChart />
+            <InitialChart name="cpu" data={MACHINE.cpu.map(item => item.usage_percent)} />
 
             <div class="w-full flex justify-center items-center">
-                <StrokedGaugeChart value={22} title="Load Avg (1m)" />
-                <StrokedGaugeChart value={34} title="Load Avg (5m)" />
-                <StrokedGaugeChart value={69} title="Load Avg (15m)" />
+                <StrokedGaugeChart value={MACHINE.cpu[MACHINE.cpu.length - 1].load_1} title="Load Avg (1m)" />
+                <StrokedGaugeChart value={MACHINE.cpu[MACHINE.cpu.length - 1].load_5} title="Load Avg (5m)" />
+                <StrokedGaugeChart value={MACHINE.cpu[MACHINE.cpu.length - 1].load_15} title="Load Avg (15m)" />
             </div>
         </div>
         <div class="flex-1 h-full flex flex-col gap-1 justify-start items-start shadow-lg">
@@ -86,34 +112,63 @@
                 </div>
                 <span>DISK</span>
                 <div class="ms-auto pe-2 flex gap-2 justify-center items-start text-sm pb-2">
-                    <span class="text-[27px] text-red-700">80%</span>
+                    <span
+                        class="text-[27px] {MACHINE.disk[MACHINE.disk.length - 1].usage_percent
+                            ? MACHINE.disk[MACHINE.disk.length - 1].usage_percent < 65
+                                ? 'text-green-700'
+                                : MACHINE.disk[MACHINE.disk.length - 1].usage_percent < 85
+                                  ? 'text-yellow-500'
+                                  : 'text-red-700'
+                            : 'bg-black/20'}">{MACHINE.disk[MACHINE.disk.length - 1].usage_percent} %</span>
                     <img width="40" height="40" src="/icons/chart.png" alt="chart" />
                 </div>
             </div>
+            <div class="w-full flex justify-start my-auto px-3 mt-5">
+                <div class="flex gap-1.5 items-start">
+                    {#each isMobile ? MACHINE.disk.slice(-28) : MACHINE.disk as detail}
+                        <div
+                            class="h-10 min-w-[8.4px] rounded-full cursor-pointer transition-all {detail.usage_percent
+                                ? detail.usage_percent < 65
+                                    ? 'bg-green-700 h-5!'
+                                    : detail.usage_percent < 85
+                                      ? 'bg-yellow-500 h-7!'
+                                      : 'bg-red-700 h-10!'
+                                : 'bg-black/20'}">
+                            <div
+                                class="opacity-0 group-hover:opacity-100 absolute top-10 lg:top-12 start-1/2 -translate-x-1/2 text-gray-400 text-xs">
+                                {formatFullDate(detail.timestamp_ms)}
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </div>
 
-            <InitialChart />
+            <InitialChart name="disk" data={MACHINE.disk.map(item => item.usage_percent)} />
 
-            <div class="w-full flex justify-center items-center">
-                <StrokedGaugeChart value={22} title="Usage" />
-                <div class="flex-1 h-full flex justify-center items-center">
-                    <div class="justify-center items-start h-full flex flex-col gap-3 text-sm font-semibold">
+            <div class="w-full grid grid-cols-2 justify-center items-center">
+                <StrokedGaugeChart value={MACHINE.disk[MACHINE.disk.length - 1].usage_percent} title="Usage" />
+                <div class="w-full h-full flex justify-center items-center">
+                    <div class="justify-center items-center h-full flex flex-col gap-3 text-sm font-semibold">
                         <div class="flex justify-start items-center gap-2">
                             <span>Total :</span>
-                            <span>343</span>
+                            <span>{MACHINE.disk[MACHINE.disk.length - 1].total_gb} GB</span>
                         </div>
 
                         <div class="flex justify-start items-center gap-2">
                             <span>Used :</span>
-                            <span>343</span>
+                            <span>{MACHINE.disk[MACHINE.disk.length - 1].used_gb} GB</span>
                         </div>
                         <div class="flex justify-start items-center gap-2">
                             <span>Available :</span>
-                            <span>343</span>
+                            <span
+                                >{MACHINE.disk[MACHINE.disk.length - 1].total_gb -
+                                    MACHINE.disk[MACHINE.disk.length - 1].used_gb} GB</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
         <div class="flex-1 h-full flex flex-col gap-1 justify-start items-start shadow-lg">
             <div class="w-full flex gap-4 text-[26px] font-semibold items-center">
                 <div class="p-2 rounded-lg">
@@ -121,25 +176,62 @@
                 </div>
                 <span>MEMORY</span>
                 <div class="ms-auto pe-2 flex gap-2 justify-center items-start text-sm pb-2">
-                    <span class="text-[27px] text-red-700">80%</span>
+                    <span
+                        class="text-[27px] {MACHINE.memory[MACHINE.memory.length - 1].usage_percent
+                            ? MACHINE.memory[MACHINE.memory.length - 1].usage_percent < 65
+                                ? 'text-green-700'
+                                : MACHINE.memory[MACHINE.memory.length - 1].usage_percent < 85
+                                  ? 'text-yellow-500'
+                                  : 'text-red-700'
+                            : 'bg-black/20'}">{MACHINE.memory[MACHINE.memory.length - 1].usage_percent} %</span>
                     <img width="40" height="40" src="/icons/chart.png" alt="chart" />
                 </div>
             </div>
+            <div class="w-full flex justify-start my-auto px-3 mt-5">
+                <div class="flex gap-1.5 items-start">
+                    {#each isMobile ? MACHINE.memory.slice(-28) : MACHINE.memory as detail}
+                        <div
+                            class="h-10 min-w-[8.4px] rounded-full cursor-pointer transition-all {detail.usage_percent
+                                ? detail.usage_percent < 65
+                                    ? 'bg-green-700 h-5!'
+                                    : detail.usage_percent < 85
+                                      ? 'bg-yellow-500 h-7!'
+                                      : 'bg-red-700 h-10!'
+                                : 'bg-black/20'}">
+                            <div
+                                class="opacity-0 group-hover:opacity-100 absolute top-10 lg:top-12 start-1/2 -translate-x-1/2 text-gray-400 text-xs">
+                                {formatFullDate(detail.timestamp_ms)}
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </div>
 
-            <InitialChart />
+            <InitialChart name="memory" data={MACHINE.memory.map(item => item.usage_percent)} />
 
-            <div class="w-full flex justify-center items-center">
-                <StrokedGaugeChart value={22} title="Usage" />
-                <div class="flex-1 h-full flex justify-center items-center">
-                    <div class="justify-center items-start h-full flex flex-col gap-3 text-sm font-semibold">
+            <div class="w-full grid grid-cols-2 justify-center items-center">
+                <StrokedGaugeChart value={MACHINE.memory[MACHINE.memory.length - 1].usage_percent} title="Usage" />
+                <div class="w-full h-full flex justify-center items-center">
+                    <div class="justify-center items-center h-full flex flex-col gap-3 text-sm font-semibold">
                         <div class="flex justify-start items-center gap-2">
                             <span>Total :</span>
-                            <span>343</span>
+                            <span
+                                >{Number(MACHINE.memory[MACHINE.memory.length - 1].total_mb).toLocaleString()} Mb</span>
                         </div>
 
                         <div class="flex justify-start items-center gap-2">
                             <span>Used :</span>
-                            <span>343</span>
+                            <span>{Number(MACHINE.memory[MACHINE.memory.length - 1].used_mb).toLocaleString()} Mb</span>
+                        </div>
+                        <div class="flex justify-start items-center gap-2">
+                            <span>Available :</span>
+                            <span>
+                                {(
+                                    Number(MACHINE.memory[MACHINE.memory.length - 1].total_mb) -
+                                    Number(MACHINE.memory[MACHINE.memory.length - 1].used_mb)
+                                ).toLocaleString()}
+                                Mb
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -147,7 +239,8 @@
         </div>
     </div>
 
-    <UptimeChart
+    <!-- <UptimeChart
+        height={260}
         prices={[8107, 8128, 8122, 8165, 8340, 8423]}
         dates={[
             '2018-09-19T00:00:00.000Z',
@@ -156,8 +249,8 @@
             '2018-09-22T00:00:00.000Z',
             '2018-09-23T00:00:00.000Z',
             '2018-09-24T00:00:00.000Z',
-        ]} />
-    {#if Object.values(visibleSeries).some(item => item)}
+        ]} /> -->
+    <!--   {#if Object.values(visibleSeries).some(item => item)}
         <Chart
             {isMobile}
             {visibleSeries}
@@ -165,111 +258,5 @@
                 name: stat.name,
                 data: isMobile ? stat.detail.slice(-15).map(d => d.loaded ?? 0) : stat.detail.map(d => d.loaded ?? 0),
             }))} />
-
-        {#each filteredStats as status}
-            <div class="w-full flex flex-col gap-5 relative shadow-md hover: transition-all">
-                <div
-                    class="relative flex flex-col lg:flex-row h-27.5 rounded-lg md:border md:border-[#e5e5e5] md:px-5 md:py-3">
-                    <!-- status indicator -->
-                    <div class="absolute top-3.5 end-0 md:end-5 md:top-2 flex gap-1">
-                        <div class="text-gray-500 text-xs flex items-baseline gap-2">
-                            <div
-                                class="size-2.5 rounded-full {status.detail.at(-1)?.loaded < 65
-                                    ? 'bg-green-700'
-                                    : status.detail.at(-1)?.loaded < 85
-                                      ? 'bg-yellow-500'
-                                      : 'bg-red-600'}">
-                            </div>
-                            <span>{formatTimeAgo(status.updateAt)}</span>
-                        </div>
-                    </div>
-
-                    <!-- machine name -->
-                    <h4
-                        class="my-auto text-xl border-s-3 ps-2 w-30 capitalize
-                        {status.detail.at(-1)?.loaded < 65
-                            ? 'border-s-green-700'
-                            : status.detail.at(-1)?.loaded < 85
-                              ? 'border-s-yellow-500'
-                              : 'border-s-red-600'}">
-                        {status.name}
-                    </h4>
-
-                    <!-- hover info -->
-                    <div
-                        class="absolute lg:static lg:w-full top-27 sm:top-3 max-lg:start-1/2 max-lg:-translate-x-1/2 lg:start-0 justify-center items-center text-xs sm:text-sm flex lg:flex-col gap-7 lg:gap-1">
-                        {#if itemHoveredDetail?.name === status?.name}
-                            <div class="flex [&>div]:text-nowrap">
-                                <div in:fade={{ duration: 500 }}>Total</div>
-                                <div in:fade={{ duration: 500 }}>: {status.total}</div>
-                            </div>
-                            <div class="flex [&>div]:text-nowrap">
-                                <div in:fade={{ duration: 1000 }}>
-                                    {itemHoveredDetail?.status?.usage ? 'Usage' : null}
-                                </div>
-                                <div in:fade={{ duration: 1000 }}>
-                                    {itemHoveredDetail?.status?.usage ? ': ' + itemHoveredDetail?.status?.usage : null}
-                                </div>
-                            </div>
-
-                            <div class="flex [&>div]:text-nowrap">
-                                <div in:fade={{ duration: 1300 }}>
-                                    {itemHoveredDetail?.status?.loaded ? 'Loaded' : null}
-                                </div>
-
-                                <div in:fade={{ duration: 1300 }}>
-                                    {itemHoveredDetail?.status?.loaded
-                                        ? ': ' + itemHoveredDetail?.status?.loaded + ' %'
-                                        : null}
-                                </div>
-                            </div>
-                        {/if}
-                    </div>
-
-                    <!-- bars -->
-                    <div class="w-full lg:w-fit ms-auto flex justify-center my-auto">
-                        <div class="flex gap-1">
-                            {#each isMobile ? status.detail.slice(-28) : status.detail as detail}
-                                <div
-                                    role="presentation"
-                                    onmouseenter={() => {
-                                        if (!isMobile) {
-                                            itemHoveredDetail = {
-                                                status: { ...detail },
-                                                name: status.name,
-                                            };
-                                        }
-                                    }}
-                                    onmouseleave={() => {
-                                        if (!isMobile) {
-                                            itemHoveredDetail = null;
-                                        }
-                                    }}
-                                    onclick={() => {
-                                        if (isMobile) {
-                                            itemHoveredDetail = {
-                                                status: { ...detail },
-                                                name: status.name,
-                                            };
-                                        }
-                                    }}
-                                    class="h-10 w-[2%] lg:w-2 min-w-2 rounded-full cursor-pointer transition-all {detail.loaded
-                                        ? detail.loaded < 65
-                                            ? 'bg-green-700'
-                                            : detail.loaded < 85
-                                              ? 'bg-yellow-500'
-                                              : 'bg-red-700'
-                                        : 'bg-black/20'}">
-                                    <div
-                                        class="opacity-0 group-hover:opacity-100 absolute top-10 lg:top-12 start-1/2 -translate-x-1/2 text-gray-400 text-xs">
-                                        {formatFullDate(status.updateAt)}
-                                    </div>
-                                </div>
-                            {/each}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {/each}
-    {/if}
+    {/if} -->
 </div>

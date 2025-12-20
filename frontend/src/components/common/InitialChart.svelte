@@ -1,21 +1,15 @@
 <script>
     import { onMount, onDestroy } from 'svelte';
     import ApexCharts from 'apexcharts';
+    const { data, name } = $props();
 
     let chart;
     let chartEl;
 
     const options = {
-        series: [
-            {
-                name: 'Sales',
-                data: [33, 13, 45, 95, 12, 15, 34, 61, 66, 82, 1, 36],
-            },
-        ],
         chart: {
             type: 'line',
             height: 150,
-            fontFamily: 'IRANSans, sans-serif',
             background: '#fefefe',
             zoom: {
                 enabled: false,
@@ -36,22 +30,10 @@
         },
 
         xaxis: {
-            axisBorder: { show: false },
-            axisTicks: { show: false },
-            labels: { show: false },
+            axisBorder: { show: true },
+            axisTicks: { show: true },
+            labels: { show: true },
             tooltip: { enabled: false },
-        },
-
-        yaxis: {
-            min: 0,
-            max: 100,
-            tickAmount: 5,
-            labels: {
-                formatter: val => val.toFixed(0),
-            },
-            title: {
-                text: 'Value',
-            },
         },
         yaxis: {
             show: false,
@@ -100,11 +82,11 @@
 
         tooltip: {
             enabled: true,
-            theme: 'dark',
+            theme: 'light',
             shared: false,
             intersect: true,
             y: {
-                formatter: val => `${val}`,
+                formatter: val => `${val} %`,
             },
         },
 
@@ -120,7 +102,6 @@
                     borderColor: '#ff0000',
                     strokeDashArray: 4,
                     label: {
-                        text: '',
                         style: {
                             color: '#fff',
                             background: '#ff0000',
@@ -171,7 +152,15 @@
     };
 
     onMount(() => {
-        chart = new ApexCharts(chartEl, options);
+        chart = new ApexCharts(chartEl, {
+            ...options,
+            series: [
+                {
+                    name,
+                    data: data.slice(-10),
+                },
+            ],
+        });
         chart.render();
     });
 
