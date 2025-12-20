@@ -8,6 +8,7 @@
     import Chart from '../../../../components/common/Chart.svelte';
     import InitialChart from '../../../../components/common/InitialChart.svelte';
     import StrokedGaugeChart from '../../../../components/common/StrokedGaugeChart.svelte';
+    import ProgressBar from '../../../../components/common/ProgressBar.svelte';
 
     let width = $state(0);
     let itemHoveredDetail = $state(null);
@@ -18,10 +19,10 @@
     let activeRange = $state('1m');
     const githubdata = {
         series: [
-            [1454976000000, 5],
-            [1455062400000, 3],
-            [1455148800000, 6],
-            [1455235200000, 2],
+            [1454976000000, 50],
+            [1455062400000, 30],
+            [1455148800000, 80],
+            [1455235200000, 30],
             // ...
         ],
     };
@@ -57,57 +58,105 @@
 
     <div
         class="grid grid-cols-3 justify-center items-start gap-2 w-full h-auto [&>div]:px-4 [&>div]:pt-4 [&>div]:border [&>div]:border-[#e5e5e5] [&>div]:rounded-lg">
-        <div class="flex-1 flex flex-col gap-1 justify-start items-start shadow-lg">
-            <div class="flex gap-4 text-4xl font-semibold items-center">
+        <div class="flex-1 h-full flex flex-col gap-1 justify-start items-start shadow-lg">
+            <div class="flex w-full gap-4 text-[26px] font-semibold items-center">
                 <div class="p-2 rounded-lg">
-                    <img width="50" src="/icons/cpu.png" alt="cpu" />
+                    <img width="55" src="/icons/cpu.png" alt="cpu" />
                 </div>
                 <span>CPU</span>
+
+                <div class="ms-auto pe-2 flex gap-2 justify-center items-start text-sm pb-2">
+                    <span class="text-[27px] text-red-700">27%</span>
+                    <img width="40" height="40" src="/icons/chart.png" alt="chart" />
+                </div>
             </div>
 
             <InitialChart />
 
-            <div class="w-full flex justify-between items-center">
-                <StrokedGaugeChart />
-                <StrokedGaugeChart />
-                <StrokedGaugeChart />
+            <div class="w-full flex justify-center items-center">
+                <StrokedGaugeChart value={22} title="Load Avg (1m)" />
+                <StrokedGaugeChart value={34} title="Load Avg (5m)" />
+                <StrokedGaugeChart value={69} title="Load Avg (15m)" />
             </div>
         </div>
-        <div class="flex-1 flex flex-col gap-1 justify-start items-start shadow-lg">
-            <div class="flex gap-4 text-4xl font-semibold items-center">
+        <div class="flex-1 h-full flex flex-col gap-1 justify-start items-start shadow-lg">
+            <div class="flex gap-4 text-[26px] font-semibold items-center w-full">
                 <div class="p-2 rounded-lg">
-                    <img width="50" src="/icons/cpu.png" alt="cpu" />
+                    <img width="55" src="/icons/disk.png" alt="disk" />
                 </div>
-                <span>CPU</span>
+                <span>DISK</span>
+                <div class="ms-auto pe-2 flex gap-2 justify-center items-start text-sm pb-2">
+                    <span class="text-[27px] text-red-700">80%</span>
+                    <img width="40" height="40" src="/icons/chart.png" alt="chart" />
+                </div>
             </div>
 
             <InitialChart />
 
-            <div class="w-full flex justify-between items-center">
-                <StrokedGaugeChart />
-                <StrokedGaugeChart />
-                <StrokedGaugeChart />
+            <div class="w-full flex justify-center items-center">
+                <StrokedGaugeChart value={22} title="Usage" />
+                <div class="flex-1 h-full flex justify-center items-center">
+                    <div class="justify-center items-start h-full flex flex-col gap-3 text-sm font-semibold">
+                        <div class="flex justify-start items-center gap-2">
+                            <span>Total :</span>
+                            <span>343</span>
+                        </div>
+
+                        <div class="flex justify-start items-center gap-2">
+                            <span>Used :</span>
+                            <span>343</span>
+                        </div>
+                        <div class="flex justify-start items-center gap-2">
+                            <span>Available :</span>
+                            <span>343</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="flex-1 flex flex-col gap-1 justify-start items-start shadow-lg">
-            <div class="flex gap-4 text-4xl font-semibold items-center">
+        <div class="flex-1 h-full flex flex-col gap-1 justify-start items-start shadow-lg">
+            <div class="w-full flex gap-4 text-[26px] font-semibold items-center">
                 <div class="p-2 rounded-lg">
-                    <img width="50" src="/icons/cpu.png" alt="cpu" />
+                    <img width="50" src="/icons/memory.png" alt="memory" />
                 </div>
-                <span>CPU</span>
+                <span>MEMORY</span>
+                <div class="ms-auto pe-2 flex gap-2 justify-center items-start text-sm pb-2">
+                    <span class="text-[27px] text-red-700">80%</span>
+                    <img width="40" height="40" src="/icons/chart.png" alt="chart" />
+                </div>
             </div>
 
             <InitialChart />
 
-            <div class="w-full flex justify-between items-center">
-                <StrokedGaugeChart />
-                <StrokedGaugeChart />
-                <StrokedGaugeChart />
+            <div class="w-full flex justify-center items-center">
+                <StrokedGaugeChart value={22} title="Usage" />
+                <div class="flex-1 h-full flex justify-center items-center">
+                    <div class="justify-center items-start h-full flex flex-col gap-3 text-sm font-semibold">
+                        <div class="flex justify-start items-center gap-2">
+                            <span>Total :</span>
+                            <span>343</span>
+                        </div>
+
+                        <div class="flex justify-start items-center gap-2">
+                            <span>Used :</span>
+                            <span>343</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <UptimeChart {githubdata} />
+    <UptimeChart
+        prices={[8107, 8128, 8122, 8165, 8340, 8423]}
+        dates={[
+            '2018-09-19T00:00:00.000Z',
+            '2018-09-20T00:00:00.000Z',
+            '2018-09-21T00:00:00.000Z',
+            '2018-09-22T00:00:00.000Z',
+            '2018-09-23T00:00:00.000Z',
+            '2018-09-24T00:00:00.000Z',
+        ]} />
     {#if Object.values(visibleSeries).some(item => item)}
         <Chart
             {isMobile}

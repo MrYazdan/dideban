@@ -43,11 +43,6 @@
                     },
                 },
             },
-
-            animations: {
-                enabled: true,
-                speed: 1000,
-            },
         },
 
         dataLabels: {

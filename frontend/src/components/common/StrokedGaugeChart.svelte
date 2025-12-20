@@ -1,12 +1,18 @@
 <script>
     import { onMount, onDestroy } from 'svelte';
     import ApexCharts from 'apexcharts';
+    const { title, value } = $props();
 
     let chart;
     let chartEl;
+    function getColor(val) {
+        if (val < 65) return '#22c55e'; // سبز
+        if (val <= 85) return '#eab308'; // زرد
+        return '#ef4444'; // قرمز
+    }
 
-    const options = {
-        series: [67],
+    let options = {
+        series: [value],
         chart: {
             type: 'radialBar',
             height: 350,
@@ -19,14 +25,16 @@
                 startAngle: -135,
                 endAngle: 135,
                 hollow: {
-                    size: '60%',
+                    size: '50%',
                 },
                 dataLabels: {
                     name: {
-                        fontSize: '16px',
+                        fontSize: '14px',
                         offsetY: 120,
+                        color: '#000000',
                     },
                     value: {
+                        color: getColor(value),
                         offsetY: 76,
                         fontSize: '22px',
                         formatter: val => `${val}%`,
@@ -37,21 +45,14 @@
 
         fill: {
             type: 'gradient',
-            gradient: {
-                shade: 'dark',
-                shadeIntensity: 0.15,
-                inverseColors: false,
-                opacityFrom: 1,
-                opacityTo: 1,
-                stops: [0, 50, 65, 91],
-            },
+            colors: [getColor(value)],
         },
 
         stroke: {
             dashArray: 4,
         },
 
-        labels: ['Median Ratio'],
+        labels: [title],
     };
 
     onMount(() => {

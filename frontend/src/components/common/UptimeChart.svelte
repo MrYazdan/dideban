@@ -2,132 +2,65 @@
     import { onMount, onDestroy } from 'svelte';
     import ApexCharts from 'apexcharts';
 
-    export let githubdata = { series: [] };
+    // props
+    export let prices = [];
+    export let dates = [];
 
     let chartEl;
     let chart;
-
-    function updateCommits(chart) {
-        const el = chartEl?.previousElementSibling?.querySelector('.commits');
-        if (!el) return;
-
-        const { minX, maxX } = chart.w.globals;
-        el.textContent = chart.getSeriesTotalXRange(minX, maxX);
-    }
 
     onMount(() => {
         const options = {
             series: [
                 {
-                    name: 'Commits',
-                    data: githubdata.series,
+                    data: prices,
                 },
             ],
 
             chart: {
-                id: 'chartyear',
                 type: 'area',
-                height: 180,
-                background: '#F6F8FA',
-                fontFamily: 'IRANSans, sans-serif',
-                toolbar: {
-                    show: false,
-                },
+                height: 270,
                 zoom: {
                     enabled: false,
                 },
-                animations: {
-                    enabled: true,
-                    easing: 'easeinout',
-                    speed: 600,
+                toolbar: {
+                    show: false,
                 },
-                events: {
-                    mounted: updateCommits,
-                    updated: updateCommits,
-                },
-            },
-
-            theme: {
-                mode: 'light',
-            },
-
-            colors: ['#FF7F00'],
-
-            stroke: {
-                show: true,
-                width: 0,
-                curve: 'monotoneCubic',
-                lineCap: 'butt',
-            },
-
-            fill: {
-                type: 'solid',
-                opacity: 1,
             },
 
             dataLabels: {
                 enabled: false,
             },
 
-            markers: {
-                size: 0,
-                hover: {
-                    size: 4,
-                },
+            stroke: {
+                curve: 'straight',
             },
 
-            grid: {
-                show: false,
+            title: {
+                text: 'Fundamental Analysis of Stocks',
+                align: 'left',
             },
 
-            legend: {
-                show: false,
+            subtitle: {
+                text: 'Price Movements',
+                align: 'left',
             },
+
+            labels: dates,
 
             xaxis: {
                 type: 'datetime',
-                axisBorder: {
-                    show: false,
-                },
-                axisTicks: {
-                    show: false,
-                },
-                labels: {
-                    show: false,
-                },
-                tooltip: {
-                    enabled: false,
-                },
             },
 
             yaxis: {
-                show: true,
-                forceNiceScale: true,
-                labels: {
-                    show: true,
-                },
+                opposite: true,
+            },
+            grid: {
+                yaxis: { lines: { show: false } },
             },
 
-            tooltip: {
-                enabled: true,
-                shared: false,
-                intersect: false,
-                x: {
-                    show: true,
-                    format: 'dd MMM yyyy',
-                },
-            },
-
-            states: {
-                normal: {
-                    filter: { type: 'none' },
-                },
-                hover: {
-                    filter: { type: 'lighten' },
-                },
-                active: {
-                    filter: { type: 'darken' },
-                },
+            legend: {
+                horizontalAlign: 'left',
             },
         };
 
@@ -140,8 +73,4 @@
     });
 </script>
 
-<div class="w-full flex flex-col">
-    <h2 class="text-4xl">UPTIME</h2>
-
-    <div bind:this={chartEl}></div>
-</div>
+<div bind:this={chartEl} class="w-full border overflow-hidden rounded-lg border-[#e5e5e5] pe-4 py-4 shadow-lg"></div>
