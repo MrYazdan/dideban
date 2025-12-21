@@ -8,7 +8,7 @@
 
     const options = {
         chart: {
-            type: 'line',
+            type: 'area',
             height: 150,
             background: '#fefefe',
             zoom: {
@@ -71,7 +71,17 @@
         },
 
         dataLabels: {
-            enabled: false,
+            enabled: true,
+            formatter: val => `${val} %`,
+            offsetY: -10, 
+            style: {
+                fontSize: '12px',
+                fontWeight: '600',
+                colors: ['#0088ee'],
+            },
+            background: {
+                enabled: false, 
+            },
         },
 
         legend: {
@@ -91,8 +101,16 @@
         },
 
         fill: {
-            type: 'solid',
-            opacity: 1,
+            type: 'gradient',
+            gradient: {
+                shade: 'light',
+                type: 'vertical',
+                shadeIntensity: 0.4,
+                gradientToColors: ['#0088ee'],
+                opacityFrom: 0.4,
+                opacityTo: 0.05,
+                stops: [0, 100],
+            },
         },
 
         annotations: {
