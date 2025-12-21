@@ -56,7 +56,7 @@
         },
 
         stroke: {
-            width: 5,
+            width: 2,
             curve: 'monotoneCubic',
             colors: ['#0088ee'],
         },
@@ -73,14 +73,14 @@
         dataLabels: {
             enabled: true,
             formatter: val => `${val} %`,
-            offsetY: -10, 
+            offsetY: -10,
             style: {
                 fontSize: '12px',
                 fontWeight: '600',
                 colors: ['#0088ee'],
             },
             background: {
-                enabled: false, 
+                enabled: false,
             },
         },
 
@@ -156,12 +156,9 @@
             {
                 breakpoint: 768,
                 options: {
-                    chart: {
-                        height: 300,
-                    },
-                    xaxis: {
-                        labels: {
-                            rotate: -90,
+                    dataLabels: {
+                        style: {
+                            fontSize: '10px',
                         },
                     },
                 },

@@ -65,12 +65,12 @@
 
         fill: {
             type: 'gradient',
-            colors: ['#61a5c2', '#2ec4b6', '#84afe6'],
+            colors: ['#61a5c2', '#42a5f5', '#bee1e6'],
             gradient: {
                 shade: '',
                 type: 'vertical',
                 shadeIntensity: 0.5,
-                gradientToColors: ['#61a5c2', '#2ec4b6', '#84afe6'],
+                gradientToColors: ['#61a5c2', '#42a5f5', '#bee1e6'],
                 opacityFrom: 1,
                 opacityTo: 0.3,
                 stops: [0, 65, 100],
@@ -111,7 +111,7 @@
             },
         },
 
-        colors: ['#61a5c2', '#2ec4b6', '#84afe6'],
+        colors: ['#61a5c2', '#42a5f5', '#bee1e6'],
 
         theme: {
             mode: 'light',

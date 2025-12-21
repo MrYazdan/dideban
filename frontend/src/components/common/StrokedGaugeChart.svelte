@@ -56,7 +56,33 @@
     };
 
     onMount(() => {
-        chart = new ApexCharts(chartEl, options);
+        chart = new ApexCharts(chartEl, {
+            ...options,
+            responsive: [
+                {
+                    breakpoint: 768,
+                    options: {
+                        plotOptions: {
+                            radialBar: {
+                                dataLabels: {
+                                    name: {
+                                        fontSize: '10px',
+                                        offsetY: 55,
+                                        color: '#000000',
+                                    },
+                                    value: {
+                                        color: getColor(value),
+                                        offsetY: -12,
+                                        fontSize: '15px',
+                                        formatter: val => `${val}%`,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            ],
+        });
         chart.render();
     });
 
@@ -65,4 +91,4 @@
     });
 </script>
 
-<div class="w-fit max-w-47 m-auto" bind:this={chartEl}></div>
+<div class="w-fit max-w-28 sm:max-w-47 m-auto" bind:this={chartEl}></div>
