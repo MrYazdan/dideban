@@ -24,19 +24,19 @@
                 show: false,
             },
 
-          dataLabels: {
-            enabled: true,
-            formatter: val => `${val} ms`,
-            offsetY: -10,
-            style: {
-                fontSize: '10px',
-                fontWeight: '600',
-                colors: ['#0088ee'],
+            dataLabels: {
+                enabled: true,
+                formatter: val => `${val} ms`,
+                offsetY: -10,
+                style: {
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    colors: ['#0088ee'],
+                },
+                background: {
+                    enabled: false,
+                },
             },
-            background: {
-                enabled: false,
-            },
-        },
 
             stroke: {
                 curve: 'straight',
@@ -60,7 +60,7 @@
             },
 
             yaxis: {
-                show:false,
+                show: false,
                 min: 0,
                 max: 5000, // 5 ثانیه = 5000 میلی‌ثانیه
                 tickAmount: 5,

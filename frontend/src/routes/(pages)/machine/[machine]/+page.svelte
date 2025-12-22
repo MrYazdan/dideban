@@ -1,6 +1,5 @@
 <script>
     import UptimeChart from './../../../../components/common/UptimeChart.svelte';
-    import { fade } from 'svelte/transition';
     import formatTimeAgo from '../../../../utils/formatTimeAgo.svelte';
     import formatFullDate from '../../../../utils/formatFullDate.js';
     import { MACHINE } from './constant.svelte.js';
@@ -14,6 +13,7 @@
     let itemHoveredDetail = $state(null);
     let activeBar = $state(null);
     let isMobile = $derived(width < 365);
+    let isTablet = $derived(width > 1279 && width < 1536);
     let visibleSeries = $state({
         CPU: true,
         Memory: true,
@@ -59,7 +59,7 @@
     </div>
 
     <div
-        class="grid grid-cols-1 md:grid-cols-3 justify-center items-start gap-2 w-full h-auto [&>div]:px-2 sm:[&>div]:px-4 [&>div]:pt-2 sm:[&>div]:pt-4 [&>div]:border [&>div]:border-[#e5e5e5] [&>div]:rounded-lg">
+        class="grid grid-cols-1 xl:grid-cols-3 justify-center items-start gap-2 w-full h-auto [&>div]:px-2 sm:[&>div]:px-4 [&>div]:pt-2 sm:[&>div]:pt-4 [&>div]:border [&>div]:border-[#e5e5e5] [&>div]:rounded-lg">
         {#if visibleSeries.CPU}
             <div class="flex-1 h-full flex flex-col gap-1 justify-start items-start shadow-lg">
                 <div class="flex w-full gap-1 sm:gap-4 text-xl sm:text-[26px] font-semibold items-center">
@@ -84,10 +84,11 @@
                 </div>
 
                 <div class="w-full flex justify-center sm:justify-start my-auto px-3 mt-5">
-                    <div class="flex gap-[5.5px] sm:gap-1.5 md:gap-1.25 items-start">
-                        {#each isMobile ? MACHINE.cpu.slice(-28) : MACHINE.cpu as detail}
+                    <div
+                        class="flex gap-[5.5px] sm:gap-1.5 md:gap-[7.5px] lg:gap-[13.7px] xl:gap-1.25 2xl:gap-1.25 items-start">
+                        {#each isMobile || isTablet ? MACHINE.cpu.slice(-28) : MACHINE.cpu as detail}
                             <div
-                                class="h-10 w-[5.1px] sm:min-w-2 md:min-w-[7.5px] rounded-full cursor-pointer transition-all {detail.usage_percent
+                                class="h-10 w-[5.1px] sm:min-w-2 md:min-w-2.5 lg:min-w-2.5 md:min-h-7.5 xl:min-w-2 2xl:min-w-[7.5px] rounded-full cursor-pointer transition-all {detail.usage_percent
                                     ? detail.usage_percent < 65
                                         ? 'bg-green-700 h-5!'
                                         : detail.usage_percent < 85
@@ -135,10 +136,11 @@
                 </div>
 
                 <div class="w-full flex justify-center sm:justify-start my-auto px-3 mt-5">
-                    <div class="flex gap-[5.5px] sm:gap-1.5 md:gap-1.25 items-start">
-                        {#each isMobile ? MACHINE.disk.slice(-28) : MACHINE.disk as detail}
+                    <div
+                        class="flex gap-[5.5px] sm:gap-1.5 md:gap-[7.5px] lg:gap-[13.7px] xl:gap-1.25 2xl:gap-1.25 items-start">
+                        {#each isMobile || isTablet ? MACHINE.disk.slice(-28) : MACHINE.disk as detail}
                             <div
-                                class="h-10 w-[5.1px] sm:min-w-2 md:min-w-[7.5px] rounded-full cursor-pointer transition-all {detail.usage_percent
+                                class="h-10 w-[5.1px] sm:min-w-2 md:min-w-2.5 lg:min-w-2.5 md:min-h-7.5 xl:min-w-2 2xl:min-w-[7.5px] rounded-full cursor-pointer transition-all {detail.usage_percent
                                     ? detail.usage_percent < 65
                                         ? 'bg-green-700 h-5!'
                                         : detail.usage_percent < 85
@@ -207,10 +209,11 @@
                 </div>
 
                 <div class="w-full flex justify-center sm:justify-start my-auto px-3 mt-5">
-                    <div class="flex gap-[5.5px] sm:gap-1.5 md:gap-1.25 items-start">
-                        {#each isMobile ? MACHINE.memory.slice(-28) : MACHINE.memory as detail}
+                    <div
+                        class="flex gap-[5.5px] sm:gap-1.5 md:gap-[7.5px] lg:gap-[13.7px] xl:gap-1.25 2xl:gap-1.25 items-start">
+                        {#each isMobile || isTablet ? MACHINE.memory.slice(-28) : MACHINE.memory as detail}
                             <div
-                                class="h-10 w-[5.1px] sm:min-w-2 md:min-w-[7.5px] rounded-full cursor-pointer transition-all {detail.usage_percent
+                                class="h-10 w-[5.1px] sm:min-w-2 md:min-w-2.5 lg:min-w-2.5 md:min-h-7.5 xl:min-w-2 2xl:min-w-[7.5px] rounded-full cursor-pointer transition-all {detail.usage_percent
                                     ? detail.usage_percent < 65
                                         ? 'bg-green-700 h-5!'
                                         : detail.usage_percent < 85

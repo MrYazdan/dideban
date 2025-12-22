@@ -21,9 +21,9 @@
 
 <svelte:window bind:innerWidth={width} />
 <aside
-    class="{isMenu
-        ? 'flex w-full! h-full fixed start-0 z-50 xl:static xl:w-63.75! pt-9'
-        : 'hidden'} border-e bg-[#f5f5f5] xl:flex flex-col w-63.75">
+    class="border-e bg-[#f5f5f5] 2xl:flex flex-col w-63.75 {isMenu
+        ? 'flex w-full! h-full fixed start-0 z-50 2xl:static 2xl:w-63.75! pt-9'
+        : 'hidden'}">
     <div class="flex flex-col justify-start items-start h-fit">
         <div class="hidden h-12.5 w-full mx-auto border-b border-[#e5e5e5] xl:flex justify-start items-center ps-4">
             <img width="22" height="22" src="/icons/monitoring.png" alt="monitoring" />
@@ -50,7 +50,7 @@
 </aside>
 
 <div
-    class="fixed xl:hidden top-0 w-full px-4 py-2 z-50 start-0 flex justify-between items-center border-b bg-[#f5f5f5]">
+    class="fixed 2xl:hidden top-0 w-full px-4 py-2 z-50 start-0 flex justify-between items-center border-b bg-[#f5f5f5]">
     <div class="flex justify-start items-center gap-3">
         <img width="24" height="24" src="/icons/monitoring.png" alt="monitoring" />
         <span class="text-xl">Monitoring</span>

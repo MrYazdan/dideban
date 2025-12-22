@@ -1,5 +1,5 @@
 <script>
-    import { fade, fly, draw } from 'svelte/transition';
+    import { fade } from 'svelte/transition';
     import { page } from '$app/stores';
     import { onMount } from 'svelte';
 
