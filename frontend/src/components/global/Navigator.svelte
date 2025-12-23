@@ -8,7 +8,7 @@
 
     const MENU_ITEMS = [
         { name: 'Home', path: '/', iconHref: '/icons/home.png' },
-        { name: 'Alerts', path: '/alerts', iconHref: '/icons/alert.png' },
+        { name: 'Agent', path: '/agent', iconHref: '/icons/agent.png' },
         { name: 'Settings', path: '/setting', iconHref: '/icons/setting.png' },
     ];
 
