@@ -1,130 +1,194 @@
 <script>
-    import { fade } from 'svelte/transition';
-    import formatTimeAgo from '../../utils/formatFullDate';
-    import formatFullDate from '../../utils/formatFullDate';
-    import { MACHINES } from '../constant.svelte';
+    import Chart from '../../components/common/Chart.svelte';
+    import { MACHINE } from './machine/[machine]/constant.svelte';
+
     let width = $state(0);
-    let itemHoveredDetail = $state(null);
-    let activeBar = $state(null);
-    let isMobile = $derived(width < 640);
-
-    $effect(() => {
-        const media = window.matchMedia('(max-width: 640px)');
-        const handler = e => (isMobile = e.matches);
-
-        media.addEventListener('change', handler);
-        return () => media.removeEventListener('change', handler);
+    let isMobile = $derived(width < 365);
+    let isTablet = $derived(width > 1279 && width < 1536);
+    let visibleSeries = $state({
+        CPU: true,
+        Memory: true,
+        Disk: true,
     });
 </script>
 
 <svelte:window bind:innerWidth={width} />
 
-<div class="w-full h-auto flex flex-col">
-    <h2 class="h-12.5! text-2xl xl:text-3xl w-full flex items-center border-b border-[#e5e5e5] mb-4">Machines</h2>
-
-    {#each MACHINES as item (item.agent_id)}
-        <div class="w-full h-full pb-8">
-            <h2 class="text-2xl mb-4"># {item.agent_id}</h2>
-            <div class="w-full flex flex-col gap-5">
-                {#each item.stats as stat (stat.name)}
+<section class="w-full h-auto flex flex-col">
+    <!-- Head of dashboard page -->
+    <div class="px-4 py-6">
+        <div class="w-full h-full flex px-7">
+            <div
+                class="py-2 w-25.75 flex justify-center items-center gap-2 bg-white/5 border border-white/5 rounded-[14px]">
+                <span class="text-xs text-[#99a1af]">Dark</span>
+                <div class="w-11 h-6 bg-[#00bc7d]/20 border border-[#00bc7d]/30 rounded-full relative">
                     <div
-                        class="relative flex flex-col lg:flex-row h-27.5 rounded-lg md:border md:border-[#e5e5e5] md:px-5 md:py-3">
-                        <div class="absolute top-3.5 end-0 md:end-5 md:top-2 flex gap-1 justify-start items-start">
-                            <div class="text-gray-500 text-xs flex items-baseline gap-2">
-                                <div
-                                    class="size-2.5 rounded-full {stat.detail[stat.detail.length - 1]?.loaded < 65
-                                        ? 'bg-green-700'
-                                        : stat.detail[stat.detail.length - 1]?.loaded < 85
-                                          ? 'bg-yellow-500'
-                                          : 'bg-red-600'}">
-                                </div>
-                                <span style="word-spacing: -2px;">{formatTimeAgo(stat.updateAt)}</span>
-                            </div>
-                        </div>
-
-                        <h4
-                            class="justify-start my-auto text-xl h-fit border-s-3 ps-2 w-30 capitalize {stat.detail[
-                                stat.detail.length - 1
-                            ]?.loaded < 65
-                                ? 'border-s-green-700'
-                                : stat.detail[stat.detail.length - 1]?.loaded < 85
-                                  ? 'border-s-yellow-500'
-                                  : 'border-s-red-600'} flex justify-center items-center">
-                            {stat.name}
-                        </h4>
-
-                        <div
-                            class="absolute lg:static lg:w-full top-27 sm:top-3 max-lg:start-1/2 max-lg:-translate-x-1/2 lg:start-0 justify-center items-center text-xs sm:text-sm flex lg:flex-col gap-7 lg:gap-1">
-                            {#if itemHoveredDetail?.id === item?.id && itemHoveredDetail?.name === stat?.name}
-                                <div class="flex [&>div]:text-nowrap">
-                                    <div in:fade={{ duration: 500 }}>Total</div>
-                                    <div in:fade={{ duration: 500 }}>: {stat.total}</div>
-                                </div>
-                                <div class="flex [&>div]:text-nowrap">
-                                    <div in:fade={{ duration: 1000 }}>
-                                        {itemHoveredDetail?.status?.usage ? 'Usage' : null}
-                                    </div>
-                                    <div in:fade={{ duration: 1000 }}>
-                                        {itemHoveredDetail?.status?.usage
-                                            ? ': ' + itemHoveredDetail?.status?.usage
-                                            : null}
-                                    </div>
-                                </div>
-
-                                <div class="flex [&>div]:text-nowrap">
-                                    <div in:fade={{ duration: 1300 }}>
-                                        {itemHoveredDetail?.status?.loaded ? 'Loaded' : null}
-                                    </div>
-
-                                    <div in:fade={{ duration: 1300 }}>
-                                        {itemHoveredDetail?.status?.loaded
-                                            ? ': ' + itemHoveredDetail?.status?.loaded + ' %'
-                                            : null}
-                                    </div>
-                                </div>
-                            {/if}
-                        </div>
-
-                        <div class="w-full lg:w-fit ms-auto flex flex-col justify-center gap-3 my-auto">
-                            <div class="flex gap-1 justify-center items-center w-full py-1 mx-auto">
-                                {#each isMobile ? stat.detail.slice(-28) : stat.detail as status}
-                                    <div
-                                        role="presentation"
-                                        onclick={() => {
-                                            activeBar = activeBar === status ? null : status;
-
-                                            itemHoveredDetail = activeBar
-                                                ? { status: { ...status }, id: item.id, name: stat.name }
-                                                : null;
-                                        }}
-                                        onmouseenter={() =>
-                                            (itemHoveredDetail = {
-                                                status: { ...status },
-                                                id: item.id,
-                                                name: stat.name,
-                                            })}
-                                        onmouseleave={() => (itemHoveredDetail = null)}
-                                        class="h-10 w-[2%] lg:w-2 min-w-2 rounded-full hover:scale-110 hover:opacity-90 transition-all cursor-pointer relative group {status.loaded
-                                            ? status.loaded < 65
-                                                ? 'bg-green-700'
-                                                : status.loaded < 85
-                                                  ? 'bg-yellow-500'
-                                                  : 'bg-red-700'
-                                            : 'bg-black/20'}">
-                                        <div
-                                            style="word-spacing: -2px"
-                                            class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-10 lg:top-12 start-1/2 -translate-x-1/2 text-gray-400 text-xs text-nowrap">
-                                            {formatFullDate(stat.updateAt)}
-                                        </div>
-                                    </div>
-                                {/each}
-                            </div>
-                        </div>
-                    </div>{/each}
+                        style="box-shadow: 0 5px 30px #00bc7d;"
+                        class="absolute top-1/2 -translate-y-1/2 end-px size-5 rounded-full bg-[#00bc7d]">
+                    </div>
+                </div>
             </div>
-            <a title="{item.agent_id} detail" href="/machine/{item.agent_id.toLocaleLowerCase()}">
-                <img width="30" class="rtl:rotate-180 ms-auto mt-4" src="/icons/direction.png" alt="direction" />
-            </a>
+            <div
+                class="ms-3 size-10.5 p-2.5 rounded-[14px] bg-white/5 border border-white/5 flex justify-center items-center">
+                <div class="relative">
+                    <div class="size-1 absolute -top-1 end-0 rounded-full bg-red-500"></div>
+                    <img src="/icons/bell.png" alt="bell" />
+                </div>
+            </div>
+
+            <div class="w-80.75 h-10 flex justify-between items-center ms-auto">
+                <div class="w-31.5 h-10 rounded-lg bg-[#10b981] flex justify-center items-center gap-2">
+                    <img src="/icons/plus-mark.png" alt="plus mark" />
+
+                    <span class="text-white text-sm">Add Agent</span>
+                </div>
+                <div class="h-full w-px bg-[#FFFFFF]/20"></div>
+
+                <div class="flex gap-2 justify-center items-center">
+                    <div class="flex flex-col justify-center items-end">
+                        <span class="text-sm text-white">Andrew Smith</span>
+
+                        <span class="text-xs text-[#99A1AF]">System Admin</span>
+                    </div>
+
+                    <div class="w-10.5 h-10 rounded-[10px] flex justify-center items-center bg-[#00b478]">
+                        <img src="/icons/user.svg" alt="user" />
+                    </div>
+                </div>
+            </div>
         </div>
-    {/each}
-</div>
+    </div>
+
+    <!-- Content of dashboard page -->
+
+    <div class="w-full gap-11.5 p-10 pt-3">
+        <div class="w-full h-103.25 flex gap-7.75">
+            <div class="w-213 h-full p-6 rounded-[14px] bg-[#0D0D0D] border border-white/5">
+                <div class="flex flex-col gap-4 items-start justify-around">
+                    <div class="w-full flex flex-col justify-start items-start">
+                        <span class="text-xl text-white">24-Hour Performance Overview</span>
+                        <span class="text-sm text-[#99a1af]">System resource utilization trends</span>
+                    </div>
+
+                    <div class="w-full h-20.5 flex justify-around gap-4.75">
+                        <div
+                            class="h-full w-59.25 flex flex-col justify-start items-start gap-2 px-4 py-3 rounded-[10px] bg-[#121212] border border-white/5">
+                            <div class="w-full flex justify-start items-center gap-1.5">
+                                <span class="size-2 rounded-full bg-[#ad46ff]"></span>
+                                <span class="text-sm text-[#6a7282]">CPU Average</span>
+                            </div>
+
+                            <span class="text-white text-2xl">60.1%</span>
+                        </div>
+                        <div
+                            class="h-full w-59.25 flex flex-col justify-start items-start gap-2 px-4 py-3 rounded-[10px] bg-[#121212] border border-white/5">
+                            <div class="w-full flex justify-start items-center gap-1.5">
+                                <span class="size-2 rounded-full bg-[#2b7fff]"></span>
+                                <span class="text-sm text-[#6a7282]">Memory Average</span>
+                            </div>
+
+                            <span class="text-white text-2xl">65.4%</span>
+                        </div>
+                        <div
+                            class="h-full w-59.25 flex flex-col justify-start items-start gap-2 px-4 py-3 rounded-[10px] bg-[#121212] border border-white/5">
+                            <div class="w-full flex justify-start items-center gap-1.5">
+                                <span class="size-2 rounded-full bg-[#00bc7d]"></span>
+                                <span class="text-sm text-[#6a7282]">Network Average</span>
+                            </div>
+
+                            <span class="text-white text-2xl">50.6%</span>
+                        </div>
+                    </div>
+
+                    <Chart
+                        {isMobile}
+                        {visibleSeries}
+                        data={[
+                            {
+                                name: 'CPU',
+                                data: isMobile
+                                    ? MACHINE.cpu.slice(-15).map(d => d.usage_percent ?? 0)
+                                    : MACHINE.cpu.map(d => d.usage_percent ?? 0),
+                            },
+                            {
+                                name: 'Memory',
+                                data: isMobile
+                                    ? MACHINE.memory.slice(-15).map(d => d.usage_percent ?? 0)
+                                    : MACHINE.memory.map(d => d.usage_percent ?? 0),
+                            },
+                            {
+                                name: 'Disk',
+                                data: isMobile
+                                    ? MACHINE.disk.slice(-15).map(d => d.usage_percent ?? 0)
+                                    : MACHINE.disk.map(d => d.usage_percent ?? 0),
+                            },
+                        ]} />
+                </div>
+            </div>
+
+            <div class="w-full h-full grid grid-cols-2 grid-rows-2 gap-7.75">
+                <div class="border border-white/5 rounded-[14px] relative overflow-hidden group">
+                    <div
+                        class="absolute -top-20 end-0 size-0 rounded-full group-hover:top-2 group-hover:end-2 transition-all duration-700"
+                        style="box-shadow: 0 0 300px 60px rgba(0,102,255,1);">
+                        <div class="w-full h-full bg-white/5"></div>
+                    </div>
+
+                    <div class="p-6 flex flex-col">
+                        <div
+                            class="size-12.5 flex justify-center items-center rounded-[14px] border border-[#51a2ff]/20 bg-[#2B7FFF]/10 mb-3">
+                            <img src="/icons/total.svg" alt="total" />
+                        </div>
+                        <div class="text-white text-3xl mb-1">156</div>
+                        <span class="text-sm text-[#99a1af]">Total Services</span>
+                    </div>
+                </div>
+                <div class="border border-white/5 rounded-[14px] relative overflow-hidden group">
+                    <div
+                        class="absolute -top-20 end-0 size-0 rounded-full group-hover:top-2 group-hover:end-2 transition-all duration-700"
+                        style="box-shadow: 0 0 300px 60px rgb(0,212,146);">
+                        <div class="w-full h-full bg-white/5"></div>
+                    </div>
+                    <div class="p-6 flex flex-col">
+                        <div
+                            class="size-12.5 flex justify-center items-center rounded-[14px] border border-[#00bc7d]/20 bg-[#00BC7D]/10 mb-3">
+                            <img src="/icons/tick.svg" alt="tick" />
+                        </div>
+                        <div class="text-[#00d492] text-3xl mb-1">142</div>
+                        <span class="text-sm text-[#99a1af]">Up Services</span>
+                    </div>
+                </div>
+                <div class="border border-white/5 rounded-[14px] relative overflow-hidden group">
+                    <div
+                        class="absolute -top-20 end-0 size-0 rounded-full group-hover:top-2 group-hover:end-2 transition-all duration-700"
+                        style="box-shadow: 0 0 300px 60px rgb(255,100,103);">
+                        <div class="w-full h-full bg-white/5"></div>
+                    </div>
+                    <div class="p-6 flex flex-col">
+                        <div
+                            class="size-12.5 flex justify-center items-center rounded-[14px] border border-[#fb2c36]/20 bg-[#FB2C36]/10 mb-3">
+                            <img src="/icons/error.svg" alt="error" />
+                        </div>
+                        <div class="text-[#ff6467] text-3xl mb-1">8</div>
+                        <span class="text-sm text-[#99a1af]">Down Services</span>
+                    </div>
+                </div>
+                <div class="border border-white/5 rounded-[14px] relative overflow-hidden group">
+                    <div
+                        class="absolute -top-20 end-0 size-0 rounded-full group-hover:top-2 group-hover:end-2 transition-all duration-700"
+                        style="box-shadow: 0 0 300px 60px rgb(252,200,0);">
+                        <div class="w-full h-full bg-white/5"></div>
+                    </div>
+                    <div class="p-6 flex flex-col">
+                        <div
+                            class="size-12.5 flex justify-center items-center rounded-[14px] border border-[#fbbc05]/20 bg-[#F0B100]/10 mb-3">
+                            <img src="/icons/warning.svg" alt="warning" />
+                        </div>
+                        <div class="text-[#fdc700] text-3xl mb-1">6</div>
+                        <span class="text-sm text-[#99a1af]">Warning</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -8,7 +8,7 @@
 
     const options = {
         chart: {
-            height: 410,
+            height: 221,
             type: 'area',
             padding: {
                 top: 0,
@@ -16,7 +16,7 @@
                 bottom: 0,
                 left: 0,
             },
-            background: '#fefefe',
+            background: '#0d0d0d',
             toolbar: {
                 show: true,
                 tools: {
@@ -51,36 +51,25 @@
 
         stroke: {
             curve: 'smooth',
-            width: 1,
-        },
-        markers: {
-            size: 3,
-            colors: ['#fefefe'],
-            strokeColors: '#012a4a',
-            strokeWidth: 1,
-            hover: {
-                size: 5,
-            },
+            width: 2,
         },
 
         fill: {
             type: 'gradient',
-            colors: ['#61a5c2', '#42a5f5', '#bee1e6'],
+            colors: ['#3b82f6', '#a855f7', '#10b981'],
             gradient: {
                 shade: '',
                 type: 'vertical',
                 shadeIntensity: 0.5,
-                gradientToColors: ['#61a5c2', '#42a5f5', '#bee1e6'],
-                opacityFrom: 1,
-                opacityTo: 0.3,
+                gradientToColors: ['#3b82f6', '#a855f7', '#10b981'],
+                opacityFrom: 0.6,
+                opacityTo: 0.2,
                 stops: [0, 65, 100],
             },
         },
 
         grid: {
-            show: true,
-            borderColor: '#e5e5e5',
-            strokeDashArray: 3,
+            show: false,
         },
 
         legend: {
@@ -89,8 +78,19 @@
 
         xaxis: {
             type: 'category',
-        },
+            tickAmount: 5,
 
+            axisBorder: {
+                show: true,
+                color: 'rgba(153, 161, 175, 0.3)',
+            },
+
+            axisTicks: {
+                show: true,
+                color: 'rgba(153, 161, 175, 0.5)',
+                height: 4,
+            },
+        },
         yaxis: {
             min: 0,
             max: 100,
@@ -111,7 +111,7 @@
             },
         },
 
-        colors: ['#61a5c2', '#42a5f5', '#bee1e6'],
+        colors: ['#3b82f6', '#a855f7', '#10b981'],
 
         theme: {
             mode: 'light',
@@ -137,7 +137,7 @@
         if (chart) {
             chart.updateOptions({
                 chart: {
-                    height: isMobile ? 300 : 410,
+                    height: isMobile ? 300 : 221,
                 },
             });
         }
@@ -148,4 +148,4 @@
     });
 </script>
 
-<div bind:this={chartEl} class="w-full border overflow-hidden rounded-lg border-[#e5e5e5] pe-4 py-4 shadow-lg"></div>
+<div bind:this={chartEl} class="w-full"></div>
