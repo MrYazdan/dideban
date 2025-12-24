@@ -5,18 +5,10 @@
 package main
 
 import (
-	"fmt"
-
 	"dideban/internal/config"
+	"dideban/internal/logger"
 
 	"github.com/rs/zerolog/log"
-)
-
-// Version information set during build time
-var (
-	Version   = "0.1.0"
-	GitCommit = "unknown"
-	BuildTime = "unknown"
 )
 
 // main is the entry point of the Dideban monitoring system.
@@ -30,7 +22,13 @@ func main() {
 	// Load application configuration (fails fast on error)
 	cfg := loadConfig()
 
-	fmt.Print(cfg)
+	// Initialize structured logger based on configuration
+	logger.Init(cfg)
+
+	// Log basic startup information for observability
+	logStartup(cfg)
+
+	log.Info().Msg("Application shutdown complete")
 }
 
 // loadConfig loads application configuration and terminates the program
@@ -43,4 +41,13 @@ func loadConfig() *config.Config {
 			Msg("Failed to load configuration")
 	}
 	return cfg
+}
+
+// logStartup logs essential startup metadata such as version,
+// build information and configuration details.
+func logStartup(cfg *config.Config) {
+	log.Info().
+		Str("version", "0.1.0").
+		Str("log_level", cfg.Log.Level).
+		Msg("🚀 Starting Dideban")
 }
