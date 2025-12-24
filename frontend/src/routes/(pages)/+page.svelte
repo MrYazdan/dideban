@@ -10,6 +10,8 @@
         Memory: true,
         Disk: true,
     });
+
+    let theme = $state('dark');
 </script>
 
 <svelte:window bind:innerWidth={width} />
@@ -36,19 +38,36 @@
                 </div>
             </div>
 
-            <div class="w-80.75 h-10 flex justify-between items-center ms-auto">
-                <div class="w-31.5 h-10 rounded-lg bg-[#10b981] flex justify-center items-center gap-2">
-                    <img src="/icons/plus-mark.png" alt="plus mark" />
-
-                    <span class="text-white text-sm">Add Agent</span>
+            <div class="h-10 flex justify-between items-center ms-auto gap-4">
+                <div class="flex flex-col gap-0.5">
+                    <div
+                        class="w-fit px-4 text-[#ff6467]/80 text-xs flex justify-center items-center gap-2 opacity-50 scale-90">
+                        <div
+                            style="box-shadow: 0 0 10px 1px #ff6467;"
+                            class="hidden size-1.5 bg-[#ff6467] rounded-full">
+                        </div>
+                        <span
+                            class="hover:animate-pulse hover:[text-shadow:0_0_100px_#F87171,0_0_150px_#F87171,0_0_200px_#F87171,0_0_250px_#F87171,0_0_300px_#F87171]">
+                            Lorem ipsum dolor sit amet consectetur, adipisicing elit. Deserunt, ducimus?</span>
+                    </div>
+                    <div
+                        class="w-fit bg-[#ff6467]/10 rounded-full text-[#ff6467]/80 text-xs flex justify-center items-center gap-2">
+                        <div style="box-shadow: 0 0 10px 1px #ff6467;" class="rounded-full animate-pulse">
+                            <img src="/icons/error.svg" alt="error" />
+                        </div>
+                        <span
+                            class="hover:animate-pulse hover:[text-shadow:0_0_100px_#F87171,0_0_150px_#F87171,0_0_200px_#F87171,0_0_250px_#F87171,0_0_300px_#F87171]">
+                            Lorem ipsum dolor sit amet consectetur, adipisicing elit. Deserunt, ducimus?</span>
+                    </div>
                 </div>
+
                 <div class="h-full w-px bg-[#FFFFFF]/20"></div>
 
                 <div class="flex gap-2 justify-center items-center">
                     <div class="flex flex-col justify-center items-end">
-                        <span class="text-sm text-white">Andrew Smith</span>
+                        <span class="text-sm text-white">Admin</span>
 
-                        <span class="text-xs text-[#99A1AF]">System Admin</span>
+                        <span class="text-xs text-[#99A1AF]">System Administrator</span>
                     </div>
 
                     <div class="w-10.5 h-10 rounded-[10px] flex justify-center items-center bg-[#00b478]">
@@ -65,7 +84,7 @@
             <div class="w-213 h-full p-6 rounded-[14px] bg-[#0D0D0D] border border-white/5">
                 <div class="flex flex-col gap-4 items-start justify-around">
                     <div class="w-full flex flex-col justify-start items-start">
-                        <span class="text-xl text-white">24-Hour Performance Overview</span>
+                        <span class="text-xl text-white">Main Performance Overview</span>
                         <span class="text-sm text-[#99a1af]">System resource utilization trends</span>
                     </div>
 
@@ -92,7 +111,7 @@
                             class="h-full w-59.25 flex flex-col justify-start items-start gap-2 px-4 py-3 rounded-[10px] bg-[#121212] border border-white/5">
                             <div class="w-full flex justify-start items-center gap-1.5">
                                 <span class="size-2 rounded-full bg-[#00bc7d]"></span>
-                                <span class="text-sm text-[#6a7282]">Network Average</span>
+                                <span class="text-sm text-[#6a7282]">Disk</span>
                             </div>
 
                             <span class="text-white text-2xl">50.6%</span>
@@ -1288,44 +1307,44 @@
             <div class="flex flex-col p-5 gap-3 bg-[#0D0D0D] border border-white/5 rounded-xl">
                 <div class="flex items-center gap-3">
                     <span class="size-2 bg-[#22c55e] rounded-full"></span>
-                    <span class="text-white text-sm">Health Center</span>
+                    <span class="text-white text-base">Health Center</span>
                 </div>
                 <div class="text-xs text-[#99a1af]">Self-help tools for troubleshooting network issues.</div>
                 <div class="w-full py-2.5 flex justify-center items-center gap-3 bg-[#1a1c23] rounded-lg mt-1.5">
-                    <span class="text-xs text-[#d1d5db]">Health Check</span>
+                    <span class="text-sm text-[#d1d5db]">Health Check</span>
                     <img src="/icons/arrow-forward.svg" alt="arrow forward" />
                 </div>
             </div>
             <div class="flex flex-col p-5 gap-3 bg-[#0D0D0D] border border-white/5 rounded-xl">
                 <div class="flex items-center gap-3">
                     <span class="size-2 bg-[#3b82f6] rounded-full"></span>
-                    <span class="text-white text-sm">Performance</span>
+                    <span class="text-white text-base">Performance</span>
                 </div>
                 <div class="text-xs text-[#99a1af]">Analyze latency and throughput bottlenecks.</div>
                 <div class="w-full py-2.5 flex justify-center items-center gap-3 bg-[#1a1c23] rounded-lg mt-1.5">
-                    <span class="text-xs text-[#d1d5db]">Analyze</span>
+                    <span class="text-sm text-[#d1d5db]">Analyze</span>
                     <img src="/icons/arrow-forward.svg" alt="arrow forward" />
                 </div>
             </div>
             <div class="flex flex-col p-5 gap-3 bg-[#0D0D0D] border border-white/5 rounded-xl">
                 <div class="flex items-center gap-3">
                     <span class="size-2 bg-[#a855f7] rounded-full"></span>
-                    <span class="text-white text-sm">Logs</span>
+                    <span class="text-white text-base">Logs</span>
                 </div>
                 <div class="text-xs text-[#99a1af]">View real-time system and security logs.</div>
                 <div class="w-full py-2.5 flex justify-center items-center gap-3 bg-[#1a1c23] rounded-lg mt-1.5">
-                    <span class="text-xs text-[#d1d5db]">View Logs</span>
+                    <span class="text-sm text-[#d1d5db]">View Logs</span>
                     <img src="/icons/arrow-forward.svg" alt="arrow forward" />
                 </div>
             </div>
             <div class="flex flex-col p-5 gap-3 bg-[#0D0D0D] border border-white/5 rounded-xl">
                 <div class="flex items-center gap-3">
                     <span class="size-2 bg-[#f97316] rounded-full"></span>
-                    <span class="text-white text-sm">Alerts</span>
+                    <span class="text-white text-base">Alerts</span>
                 </div>
                 <div class="text-xs text-[#99a1af]">Configure notification policies and thresholds.</div>
                 <div class="w-full py-2.5 flex justify-center items-center gap-3 bg-[#1a1c23] rounded-lg mt-1.5">
-                    <span class="text-xs text-[#d1d5db]">Configure</span>
+                    <span class="text-sm text-[#d1d5db]">Configure</span>
                     <img src="/icons/arrow-forward.svg" alt="arrow forward" />
                 </div>
             </div>
