@@ -17,25 +17,6 @@
 # Go workspace file
 go.work
 
-# Build directory
-build/
-dist/
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Log files
-*.log
-logs/
-
-# Configuration files with secrets
-config.local.yaml
-config.prod.yaml
-.env
-.env.local
-
 # IDE files
 .vscode/
 .idea/
@@ -75,10 +56,10 @@ web/build/
 *.temp
 
 # Configs
-*/config.yaml
 config.yaml
 
-# Dideban binery
+# Dideban binary
 dideban
+dideban.db-*
 dideban.exe
-!cmd/dideban/main.go
+!cmd/dideban/
