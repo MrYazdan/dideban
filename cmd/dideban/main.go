@@ -5,6 +5,11 @@
 package main
 
 import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"dideban/internal/config"
 	"dideban/internal/logger"
 
@@ -28,7 +33,42 @@ func main() {
 	// Log basic startup information for observability
 	logStartup(cfg)
 
+	// Create root context used across the entire application lifecycle.
+	// This context is cancelled on shutdown signals (SIGINT, SIGTERM, SIGQUIT).
+	_, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Register OS signal handlers for graceful shutdown
+	setupSignalHandlers(cancel)
+
 	log.Info().Msg("Application shutdown complete")
+}
+
+// setupSignalHandlers configures OS signal handling
+// to enable graceful shutdown of the application.
+//
+// Upon receiving a shutdown signal, the provided cancel function is invoked,
+// which propagates cancellation through the entire application via context.
+func setupSignalHandlers(cancel context.CancelFunc) {
+	sigChan := make(chan os.Signal, 1)
+
+	signal.Notify(
+		sigChan,
+		syscall.SIGINT,  // Ctrl+C
+		syscall.SIGTERM, // kill <pid>
+		syscall.SIGQUIT, // quit
+	)
+
+	go func() {
+		sig := <-sigChan
+
+		log.Info().
+			Str("signal", sig.String()).
+			Msg("Received shutdown signal")
+
+		// Trigger graceful shutdown
+		cancel()
+	}()
 }
 
 // loadConfig loads application configuration and terminates the program
