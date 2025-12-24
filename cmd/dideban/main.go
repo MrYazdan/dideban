@@ -12,6 +12,7 @@ import (
 
 	"dideban/internal/config"
 	"dideban/internal/logger"
+	"dideban/internal/server"
 
 	"github.com/rs/zerolog/log"
 )
@@ -35,13 +36,25 @@ func main() {
 
 	// Create root context used across the entire application lifecycle.
 	// This context is cancelled on shutdown signals (SIGINT, SIGTERM, SIGQUIT).
-	_, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Register OS signal handlers for graceful shutdown
 	setupSignalHandlers(cancel)
 
+	// Start the main server (blocking call)
+	runServer(ctx, cfg)
+
 	log.Info().Msg("Application shutdown complete")
+}
+
+// runServer starts and manages the Dideban server lifecycle.
+func runServer(ctx context.Context, cfg *config.Config) {
+	serverInstance := server.New(cfg)
+	if err := serverInstance.Start(ctx); err != nil {
+		log.Error().Err(err).Msg("Server failed")
+		os.Exit(1)
+	}
 }
 
 // setupSignalHandlers configures OS signal handling
