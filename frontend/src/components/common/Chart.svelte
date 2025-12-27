@@ -25,7 +25,7 @@
                 bottom: 0,
                 left: 0,
             },
-            background: '#0d0d0d',
+            background: 'transparent',
             toolbar: {
                 show: false,
                 tools: {
@@ -72,8 +72,8 @@
                 shadeIntensity: 0.5,
                 gradientToColors: ['#3b82f6', '#a855f7', '#10b981'],
                 opacityFrom: 0.6,
-                opacityTo: 0.2,
-                stops: [0, 65, 100],
+                opacityTo: 0.1,
+                stops: [0, 90, 100],
             },
         },
 
