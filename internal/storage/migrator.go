@@ -107,10 +107,10 @@ func (m *Migrator) createMigrationsTable() error {
 //
 // These migrations create the core tables needed for monitoring functionality:
 //   - checks: HTTP/ping monitoring targets
-//   - check_results: Historical check execution results
+//   - check_history: Historical check execution results
 //   - alerts: Alert configuration and state
 //   - agents: System monitoring agents
-//   - agent_metrics: System metrics collected by agents
+//   - agent_history: System metrics collected by agents
 //   - admins: System administrator
 func (m *Migrator) registerBuiltinMigrations() {
 	// Migration 1: Create checks table
@@ -139,9 +139,9 @@ func (m *Migrator) registerBuiltinMigrations() {
 	// Migration 2: Create check results table
 	m.AddMigration(Migration{
 		Version: 2,
-		Name:    "create_check_results_table",
+		Name:    "create_check_history_table",
 		UpSQL: `
-			CREATE TABLE check_results (
+			CREATE TABLE check_history (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				check_id INTEGER NOT NULL,
 				status TEXT NOT NULL CHECK (status IN ('up', 'down', 'timeout', 'error') AND length(status) <= 10),
@@ -152,39 +152,16 @@ func (m *Migrator) registerBuiltinMigrations() {
 				FOREIGN KEY (check_id) REFERENCES checks(id) ON DELETE CASCADE
 			);
 			
-			CREATE INDEX idx_check_results_check_id ON check_results(check_id);
-			CREATE INDEX idx_check_results_checked_at ON check_results(checked_at);
-			CREATE INDEX idx_check_results_status ON check_results(status);
+			CREATE INDEX idx_check_history_check_id ON check_history(check_id);
+			CREATE INDEX idx_check_history_checked_at ON check_history(checked_at);
+			CREATE INDEX idx_check_history_status ON check_history(status);
 		`,
-		DownSQL: `DROP TABLE IF EXISTS check_results;`,
+		DownSQL: `DROP TABLE IF EXISTS check_history;`,
 	})
 
-	// Migration 3: Create alerts table
+	// Migration 3: Create agents table
 	m.AddMigration(Migration{
 		Version: 3,
-		Name:    "create_alerts_table",
-		UpSQL: `
-			CREATE TABLE alerts (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				check_id INTEGER NOT NULL,
-				type TEXT NOT NULL CHECK (type IN ('telegram', 'bale', 'email', 'webhook') AND length(type) <= 20),
-				config TEXT NOT NULL, -- JSON configuration
-				enabled BOOLEAN NOT NULL DEFAULT 1,
-				last_sent DATETIME,
-				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-				FOREIGN KEY (check_id) REFERENCES checks(id) ON DELETE CASCADE
-			);
-			
-			CREATE INDEX idx_alerts_check_id ON alerts(check_id);
-			CREATE INDEX idx_alerts_type ON alerts(type);
-			CREATE INDEX idx_alerts_enabled ON alerts(enabled);
-		`,
-		DownSQL: `DROP TABLE IF EXISTS alerts;`,
-	})
-
-	// Migration 4: Create agents table
-	m.AddMigration(Migration{
-		Version: 4,
 		Name:    "create_agents_table",
 		UpSQL: `
 			CREATE TABLE agents (
@@ -203,12 +180,12 @@ func (m *Migrator) registerBuiltinMigrations() {
 		DownSQL: `DROP TABLE IF EXISTS agents;`,
 	})
 
-	// Migration 5: Create agent metrics table
+	// Migration 4: Create agent metrics table
 	m.AddMigration(Migration{
-		Version: 5,
-		Name:    "create_agent_metrics_table",
+		Version: 4,
+		Name:    "create_agent_history_table",
 		UpSQL: `
-			CREATE TABLE agent_metrics (
+			CREATE TABLE agent_history (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				agent_id INTEGER NOT NULL,
 				collect_duration_ms INTEGER NOT NULL,
@@ -227,15 +204,15 @@ func (m *Migrator) registerBuiltinMigrations() {
 				FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
 			);
 			
-			CREATE INDEX idx_agent_metrics_agent_id ON agent_metrics(agent_id);
-			CREATE INDEX idx_agent_metrics_collected_at ON agent_metrics(collected_at);
+			CREATE INDEX idx_agent_history_agent_id ON agent_history(agent_id);
+			CREATE INDEX idx_agent_history_collected_at ON agent_history(collected_at);
 		`,
-		DownSQL: `DROP TABLE IF EXISTS agent_metrics;`,
+		DownSQL: `DROP TABLE IF EXISTS agent_history;`,
 	})
 
-	// Migration 6: Create admins table
+	// Migration 5: Create admins table
 	m.AddMigration(Migration{
-		Version: 6,
+		Version: 5,
 		Name:    "create_admins_table",
 		UpSQL: `
 			CREATE TABLE admins (
@@ -248,6 +225,60 @@ func (m *Migrator) registerBuiltinMigrations() {
 			CREATE INDEX idx_admins_username ON admins(username);
 		`,
 		DownSQL: `DROP TABLE IF EXISTS admins;`,
+	})
+
+	// Migration 6: Create alerts table
+	m.AddMigration(Migration{
+		Version: 6,
+		Name:    "create_alerts_table",
+		UpSQL: `
+			CREATE TABLE alerts (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				check_id INTEGER,
+				agent_id INTEGER,
+				type TEXT NOT NULL CHECK (type IN ('telegram', 'bale', 'email', 'webhook') AND length(type) <= 20),
+				config TEXT NOT NULL, -- JSON configuration
+				condition_type TEXT,
+				condition_value REAL,
+				enabled BOOLEAN NOT NULL DEFAULT 1,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (check_id) REFERENCES checks(id) ON DELETE CASCADE,
+				FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+			);
+			
+			CREATE INDEX idx_alerts_check_id ON alerts(check_id);
+			CREATE INDEX idx_alerts_agent_id ON alerts(agent_id);
+			CREATE INDEX idx_alerts_type ON alerts(type);
+			CREATE INDEX idx_alerts_enabled ON alerts(enabled);
+		`,
+		DownSQL: `DROP TABLE IF EXISTS alerts;`,
+	})
+
+	// Migration 7: Create alert history table
+	m.AddMigration(Migration{
+		Version: 7,
+		Name:    "create_alert_history_table",
+		UpSQL: `
+			CREATE TABLE alert_history (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				alert_id INTEGER NOT NULL,
+				check_result_id INTEGER,
+				agent_metric_id INTEGER,
+				title TEXT NOT NULL,
+				message TEXT NOT NULL,
+				status TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'pending') AND length(status) <= 20),
+				sent_at DATETIME NOT NULL,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (alert_id) REFERENCES alerts(id) ON DELETE CASCADE
+			);
+			
+			CREATE INDEX idx_alert_history_alert_id ON alert_history(alert_id);
+			CREATE INDEX idx_alert_history_check_result_id ON alert_history(check_result_id);
+			CREATE INDEX idx_alert_history_agent_metric_id ON alert_history(agent_metric_id);
+			CREATE INDEX idx_alert_history_status ON alert_history(status);
+			CREATE INDEX idx_alert_history_sent_at ON alert_history(sent_at);
+		`,
+		DownSQL: `DROP TABLE IF EXISTS alert_history;`,
 	})
 
 	log.Debug().Int("count", len(m.migrations)).Msg("Built-in migrations registered")

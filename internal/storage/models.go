@@ -52,11 +52,11 @@ type Check struct {
 	UpdatedAt time.Time `db:"updated_at,not_null"`
 }
 
-// CheckResult represents the result of a single check execution.
+// CheckHistory represents the result of a single check execution.
 //
 // This table stores historical data for all check executions,
 // enabling trend analysis and performance monitoring.
-type CheckResult struct {
+type CheckHistory struct {
 	// ID is the unique identifier for the check result
 	ID int64 `db:"id,primary,auto_increment"`
 
@@ -80,38 +80,6 @@ type CheckResult struct {
 
 	// Check is the associated check (loaded via JOIN queries)
 	Check *Check `db:"-"` // The "-" tag excludes this from database operations
-}
-
-// Alert represents an alert configuration for a check.
-//
-// Alerts define how and when to notify users about check failures.
-// Multiple alerts can be configured for a single check.
-type Alert struct {
-	// ID is the unique identifier for the alert
-	ID int64 `db:"id,primary,auto_increment"`
-
-	// CheckID references the check this alert monitors
-	CheckID int64 `db:"check_id,not_null"`
-
-	// Type defines the alert method: 'telegram', 'bale', 'email', or 'webhook'
-	Type string `db:"type,not_null"`
-
-	// Config contains JSON configuration specific to the alert type
-	// For Telegram: {"token": "...", "chat_id": "..."}
-	// For Email: {"smtp_host": "...", "to": "..."}
-	Config string `db:"config,not_null"`
-
-	// Enabled determines if the alert is active
-	Enabled bool `db:"enabled,not_null"`
-
-	// LastSent is the timestamp of the most recent alert sent
-	LastSent *time.Time `db:"last_sent"`
-
-	// CreatedAt is the timestamp when the alert was created
-	CreatedAt time.Time `db:"created_at,not_null"`
-
-	// Check is the associated check (loaded via JOIN queries)
-	Check *Check `db:"-"`
 }
 
 // Agent represents a system monitoring agent.
@@ -142,12 +110,12 @@ type Agent struct {
 	UpdatedAt time.Time `db:"updated_at,not_null"`
 }
 
-// AgentMetric represents a complete metrics snapshot from an agent.
+// AgentHistory represents a complete metrics snapshot from an agent.
 //
 // Instead of storing individual metrics in separate rows, this stores
 // all metrics from a single collection cycle as structured fields.
 // This reduces database rows from ~13 per collection to 1 per collection.
-type AgentMetric struct {
+type AgentHistory struct {
 	// ID is the unique identifier for the metric record
 	ID int64 `db:"id,primary,auto_increment"`
 
@@ -197,6 +165,82 @@ type AgentMetric struct {
 	Agent *Agent `db:"-"`
 }
 
+// Alert represents an alert configuration for a check or agent.
+//
+// Alerts define how and when to notify users about check failures or agent issues.
+// Multiple alerts can be configured for a single check or agent.
+type Alert struct {
+	// ID is the unique identifier for the alert
+	ID int64 `db:"id,primary,auto_increment"`
+
+	// CheckID references the check this alert monitors (optional)
+	CheckID *int64 `db:"check_id"`
+
+	// AgentID references the agent this alert monitors (optional)
+	AgentID *int64 `db:"agent_id"`
+
+	// Type defines the alert method: 'telegram', 'bale', 'email', or 'webhook'
+	Type string `db:"type,not_null"`
+
+	// Config contains JSON configuration specific to the alert type
+	// For Telegram: {"token": "...", "chat_id": "..."}
+	// For Email: {"smtp_host": "...", "to": "..."}
+	Config string `db:"config,not_null"`
+
+	// ConditionType defines the condition that triggers the alert
+	// For checks: 'status_down', 'status_timeout', 'status_error'
+	// For agents: 'cpu_usage_high', 'memory_usage_high', 'disk_usage_high', 'agent_offline'
+	ConditionType string `db:"condition_type,not_null"`
+
+	// ConditionValue contains the threshold value for the condition (e.g., 75 for 75% disk usage)
+	ConditionValue *float64 `db:"condition_value"`
+
+	// Enabled determines if the alert is active
+	Enabled bool `db:"enabled,not_null"`
+
+	// CreatedAt is the timestamp when the alert was created
+	CreatedAt time.Time `db:"created_at,not_null"`
+
+	// Check is the associated check (loaded via JOIN queries)
+	Check *Check `db:"-"`
+
+	// Agent is the associated agent (loaded via JOIN queries)
+	Agent *Agent `db:"-"`
+}
+
+// AlertHistory represents a record of an alert that was sent.
+//
+// This model stores historical information about alerts that were sent,
+// including when they were sent, what triggered them, and their status.
+type AlertHistory struct {
+	// ID is the unique identifier for the alert history record
+	ID int64 `db:"id,primary,auto_increment"`
+
+	// AlertID references the alert configuration that triggered this record
+	AlertID int64 `db:"alert_id,not_null"`
+
+	// CheckResultID references the check result that triggered the alert (optional)
+	CheckResultID *int64 `db:"check_result_id"`
+
+	// AgentMetricID references the agent metric that triggered the alert (optional)
+	AgentMetricID *int64 `db:"agent_metric_id"`
+
+	// Title is the title of the alert message
+	Title string `db:"title,not_null"`
+
+	// Message is the full alert message that was sent
+	Message string `db:"message,not_null"`
+
+	// Status indicates the status of the alert: 'sent', 'failed', 'pending'
+	Status string `db:"status,not_null"`
+
+	// SentAt is the timestamp when the alert was sent
+	SentAt time.Time `db:"sent_at,not_null"`
+
+	// CreatedAt is the timestamp when the history record was created
+	CreatedAt time.Time `db:"created_at,not_null"`
+}
+
 // Admin represents an administrator user for the Dideban dashboard.
 //
 // Admins can access the web interface to manage checks, agents, and alerts.
@@ -235,6 +279,13 @@ const (
 	ResultStatusError = "error"
 )
 
+// AlertHistoryStatus constants define the possible alert history statuses.
+const (
+	AlertHistoryStatusSent    = "sent"
+	AlertHistoryStatusFailed  = "failed"
+	AlertHistoryStatusPending = "pending"
+)
+
 // AlertType constants define the supported alert types.
 const (
 	AlertTypeTelegram = "telegram"
@@ -259,14 +310,9 @@ func (Check) TableName() string {
 	return "checks"
 }
 
-// TableName returns the database table name for CheckResult.
-func (CheckResult) TableName() string {
-	return "check_results"
-}
-
-// TableName returns the database table name for Alert.
-func (Alert) TableName() string {
-	return "alerts"
+// TableName returns the database table name for CheckHistory.
+func (CheckHistory) TableName() string {
+	return "check_history"
 }
 
 // TableName returns the database table name for Agent.
@@ -274,9 +320,19 @@ func (Agent) TableName() string {
 	return "agents"
 }
 
-// TableName returns the database table name for AgentMetric.
-func (AgentMetric) TableName() string {
-	return "agent_metrics"
+// TableName returns the database table name for AgentHistory.
+func (AgentHistory) TableName() string {
+	return "agent_history"
+}
+
+// TableName returns the database table name for Alert.
+func (Alert) TableName() string {
+	return "alerts"
+}
+
+// TableName returns the database table name for AlertHistory.
+func (AlertHistory) TableName() string {
+	return "alert_history"
 }
 
 // TableName returns the database table name for Admin.

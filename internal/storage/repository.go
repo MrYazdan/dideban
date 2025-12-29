@@ -210,10 +210,11 @@ func (r *Repository[T]) Count(ctx context.Context, condition string, args ...int
 // Repositories provides access to all repository instances.
 type Repositories struct {
 	Checks       *Repository[Check]
-	CheckResults *Repository[CheckResult]
+	CheckHistory *Repository[CheckHistory]
 	Alerts       *Repository[Alert]
+	AlertHistory *Repository[AlertHistory]
 	Agents       *Repository[Agent]
-	AgentMetrics *Repository[AgentMetric]
+	AgentHistory *Repository[AgentHistory]
 	Admins       *Repository[Admin]
 }
 
@@ -221,10 +222,11 @@ type Repositories struct {
 func NewRepositories(orm *ORM) *Repositories {
 	return &Repositories{
 		Checks:       NewRepository[Check](orm),
-		CheckResults: NewRepository[CheckResult](orm),
+		CheckHistory: NewRepository[CheckHistory](orm),
 		Alerts:       NewRepository[Alert](orm),
+		AlertHistory: NewRepository[AlertHistory](orm),
 		Agents:       NewRepository[Agent](orm),
-		AgentMetrics: NewRepository[AgentMetric](orm),
+		AgentHistory: NewRepository[AgentHistory](orm),
 		Admins:       NewRepository[Admin](orm),
 	}
 }
