@@ -17,23 +17,49 @@ type Entity interface {
 	TableName() string
 }
 
+// EntityPtr is a constraint for pointer types that implement Entity
+type EntityPtr[T any] interface {
+	*T
+	Entity
+}
+
+// Validator interface for entities that can be validated
+type Validator interface {
+	Validate() error
+}
+
 // Repository provides generic CRUD operations for any entity type.
-type Repository[T Entity] struct {
+type Repository[T any, PT EntityPtr[T]] struct {
 	orm       *ORM
 	tableName string
 }
 
 // NewRepository creates a new repository for type T.
-func NewRepository[T Entity](orm *ORM) *Repository[T] {
-	var zero T
-	return &Repository[T]{
+func NewRepository[T any, PT EntityPtr[T]](orm *ORM) *Repository[T, PT] {
+	var zero PT = new(T)
+	return &Repository[T, PT]{
 		orm:       orm,
 		tableName: zero.TableName(),
 	}
 }
 
+// validateEntity validates an entity if it implements the Validator interface.
+// This helper method reduces code duplication in Create and Update methods.
+func (r *Repository[T, PT]) validateEntity(entity *T) error {
+	if validator, ok := any(entity).(Validator); ok {
+		return validator.Validate()
+	}
+	// If the entity doesn't implement Validator, that's okay
+	return nil
+}
+
 // Create inserts a new entity into the database.
-func (r *Repository[T]) Create(ctx context.Context, entity T) (int64, error) {
+func (r *Repository[T, PT]) Create(ctx context.Context, entity *T) (int64, error) {
+	// Validate entity before creation
+	if err := r.validateEntity(entity); err != nil {
+		return 0, fmt.Errorf("validation failed: %w", err)
+	}
+
 	// Use reflection to build INSERT query dynamically
 	v := reflect.ValueOf(entity)
 	// If it's a pointer, get the underlying value
@@ -98,7 +124,7 @@ func (r *Repository[T]) Create(ctx context.Context, entity T) (int64, error) {
 }
 
 // GetByID retrieves an entity by its ID.
-func (r *Repository[T]) GetByID(ctx context.Context, id int64) (*T, error) {
+func (r *Repository[T, PT]) GetByID(ctx context.Context, id int64) (*T, error) {
 	entities, err := NewSelectBuilderFrom[T](r.orm, r.tableName).
 		Where("id = ?", id).
 		Execute(ctx)
@@ -112,14 +138,19 @@ func (r *Repository[T]) GetByID(ctx context.Context, id int64) (*T, error) {
 }
 
 // GetAll retrieves all entities.
-func (r *Repository[T]) GetAll(ctx context.Context) ([]T, error) {
+func (r *Repository[T, PT]) GetAll(ctx context.Context) ([]T, error) {
 	return NewSelectBuilderFrom[T](r.orm, r.tableName).
 		OrderBy("id DESC").
 		Execute(ctx)
 }
 
 // Update updates an existing entity.
-func (r *Repository[T]) Update(ctx context.Context, entity T) error {
+func (r *Repository[T, PT]) Update(ctx context.Context, entity *T) error {
+	// Validate entity before update
+	if err := r.validateEntity(entity); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+
 	v := reflect.ValueOf(entity)
 	// If it's a pointer, get the underlying value
 	if v.Kind() == reflect.Ptr {
@@ -171,7 +202,7 @@ func (r *Repository[T]) Update(ctx context.Context, entity T) error {
 }
 
 // Delete deletes an entity by ID.
-func (r *Repository[T]) Delete(ctx context.Context, id int64) error {
+func (r *Repository[T, PT]) Delete(ctx context.Context, id int64) error {
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = ?", r.tableName)
 	_, err := r.orm.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -181,14 +212,14 @@ func (r *Repository[T]) Delete(ctx context.Context, id int64) error {
 }
 
 // Where adds a WHERE condition and returns entities.
-func (r *Repository[T]) Where(ctx context.Context, condition string, args ...interface{}) ([]T, error) {
+func (r *Repository[T, PT]) Where(ctx context.Context, condition string, args ...interface{}) ([]T, error) {
 	return NewSelectBuilderFrom[T](r.orm, r.tableName).
 		Where(condition, args...).
 		Execute(ctx)
 }
 
 // First returns the first entity matching the condition.
-func (r *Repository[T]) First(ctx context.Context, condition string, args ...interface{}) (*T, error) {
+func (r *Repository[T, PT]) First(ctx context.Context, condition string, args ...interface{}) (*T, error) {
 	entity, err := NewSelectBuilderFrom[T](r.orm, r.tableName).
 		Where(condition, args...).
 		First(ctx)
@@ -199,7 +230,7 @@ func (r *Repository[T]) First(ctx context.Context, condition string, args ...int
 }
 
 // Count returns the number of entities matching the condition.
-func (r *Repository[T]) Count(ctx context.Context, condition string, args ...interface{}) (int64, error) {
+func (r *Repository[T, PT]) Count(ctx context.Context, condition string, args ...interface{}) (int64, error) {
 	builder := NewSelectBuilderFrom[T](r.orm, r.tableName)
 	if condition != "" {
 		builder = builder.Where(condition, args...)
@@ -209,24 +240,24 @@ func (r *Repository[T]) Count(ctx context.Context, condition string, args ...int
 
 // Repositories provides access to all repository instances.
 type Repositories struct {
-	Checks       *Repository[Check]
-	CheckHistory *Repository[CheckHistory]
-	Alerts       *Repository[Alert]
-	AlertHistory *Repository[AlertHistory]
-	Agents       *Repository[Agent]
-	AgentHistory *Repository[AgentHistory]
-	Admins       *Repository[Admin]
+	Checks       *Repository[Check, *Check]
+	CheckHistory *Repository[CheckHistory, *CheckHistory]
+	Alerts       *Repository[Alert, *Alert]
+	AlertHistory *Repository[AlertHistory, *AlertHistory]
+	Agents       *Repository[Agent, *Agent]
+	AgentHistory *Repository[AgentHistory, *AgentHistory]
+	Admins       *Repository[Admin, *Admin]
 }
 
 // NewRepositories creates and initializes all repository instances.
 func NewRepositories(orm *ORM) *Repositories {
 	return &Repositories{
-		Checks:       NewRepository[Check](orm),
-		CheckHistory: NewRepository[CheckHistory](orm),
-		Alerts:       NewRepository[Alert](orm),
-		AlertHistory: NewRepository[AlertHistory](orm),
-		Agents:       NewRepository[Agent](orm),
-		AgentHistory: NewRepository[AgentHistory](orm),
-		Admins:       NewRepository[Admin](orm),
+		Checks:       NewRepository[Check, *Check](orm),
+		CheckHistory: NewRepository[CheckHistory, *CheckHistory](orm),
+		Alerts:       NewRepository[Alert, *Alert](orm),
+		AlertHistory: NewRepository[AlertHistory, *AlertHistory](orm),
+		Agents:       NewRepository[Agent, *Agent](orm),
+		AgentHistory: NewRepository[AgentHistory, *AgentHistory](orm),
+		Admins:       NewRepository[Admin, *Admin](orm),
 	}
 }

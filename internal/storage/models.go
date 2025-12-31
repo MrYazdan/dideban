@@ -36,6 +36,9 @@ type Check struct {
 	// Type defines the kind of check: 'http', 'ping'
 	Type string `db:"type,not_null"`
 
+	// Config is the configuration for the check (JSON string)
+	Config string `db:"config"`
+
 	// Target is the monitoring target (URL for HTTP, hostname for ping)
 	Target string `db:"target,not_null"`
 
@@ -185,7 +188,7 @@ type Alert struct {
 	// Config contains JSON configuration specific to the alert type
 	// For Telegram: {"token": "...", "chat_id": "..."}
 	// For Email: {"smtp_host": "...", "to": "..."}
-	Config string `db:"config,not_null"`
+	Config string `db:"config"`
 
 	// ConditionType defines the condition that triggers the alert
 	// For checks: 'status_down', 'status_timeout', 'status_error'
@@ -263,38 +266,73 @@ type Admin struct {
 // These are used by the ORM for automatic table name resolution.
 
 // TableName returns the database table name for Check.
-func (Check) TableName() string {
+func (*Check) TableName() string {
 	return "checks"
 }
 
+// Validate validates the Check entity.
+func (c *Check) Validate() error {
+	return ValidateCheck(c)
+}
+
 // TableName returns the database table name for CheckHistory.
-func (CheckHistory) TableName() string {
+func (*CheckHistory) TableName() string {
 	return "check_history"
 }
 
+// Validate validates the CheckHistory entity.
+func (ch *CheckHistory) Validate() error {
+	return ValidateCheckHistory(ch)
+}
+
 // TableName returns the database table name for Agent.
-func (Agent) TableName() string {
+func (*Agent) TableName() string {
 	return "agents"
 }
 
+// Validate validates the Agent entity.
+func (a *Agent) Validate() error {
+	return ValidateAgent(a)
+}
+
 // TableName returns the database table name for AgentHistory.
-func (AgentHistory) TableName() string {
+func (*AgentHistory) TableName() string {
 	return "agent_history"
 }
 
+// Validate validates the AgentHistory entity.
+func (ah *AgentHistory) Validate() error {
+	return ValidateAgentHistory(ah)
+}
+
 // TableName returns the database table name for Alert.
-func (Alert) TableName() string {
+func (*Alert) TableName() string {
 	return "alerts"
 }
 
+// Validate validates the Alert entity.
+func (a *Alert) Validate() error {
+	return ValidateAlert(a)
+}
+
 // TableName returns the database table name for AlertHistory.
-func (AlertHistory) TableName() string {
+func (*AlertHistory) TableName() string {
 	return "alert_history"
 }
 
+// Validate validates the AlertHistory entity.
+func (ah *AlertHistory) Validate() error {
+	return ValidateAlertHistory(ah)
+}
+
 // TableName returns the database table name for Admin.
-func (Admin) TableName() string {
+func (*Admin) TableName() string {
 	return "admins"
+}
+
+// Validate validates the Admin entity.
+func (a *Admin) Validate() error {
+	return ValidateAdmin(a)
 }
 
 // CheckType constants define the supported check types.
