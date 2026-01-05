@@ -33,7 +33,6 @@ type ServerConfig struct {
 	ReadTimeout  time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
 	WriteTimeout time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
 	IdleTimeout  time.Duration `mapstructure:"idle_timeout" yaml:"idle_timeout"`
-	EnableCORS   bool          `mapstructure:"enable_cors" yaml:"enable_cors"`
 }
 
 type StorageConfig struct {

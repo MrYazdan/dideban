@@ -17,10 +17,6 @@ server:
   
   # Idle connection timeout (default: "60s")
   idle_timeout: "60s"
-  
-  # Enable CORS for cross-origin requests (default: false)
-  # Set to true for development or separate frontend
-  enable_cors: false
 
 # SQLite Database Configuration
 storage:

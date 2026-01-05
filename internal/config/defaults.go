@@ -9,7 +9,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.read_timeout", "30s")
 	v.SetDefault("server.write_timeout", "30s")
 	v.SetDefault("server.idle_timeout", "60s")
-	v.SetDefault("server.enable_cors", false)
 
 	// Storage defaults
 	v.SetDefault("storage.path", "dideban.db")
