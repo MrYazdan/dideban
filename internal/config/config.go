@@ -33,6 +33,12 @@ type ServerConfig struct {
 	ReadTimeout  time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
 	WriteTimeout time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
 	IdleTimeout  time.Duration `mapstructure:"idle_timeout" yaml:"idle_timeout"`
+	JWT          JWTConfig     `mapstructure:"jwt" yaml:"jwt"`
+}
+
+type JWTConfig struct {
+	Secret string        `mapstructure:"secret" yaml:"secret"`
+	TTL    time.Duration `mapstructure:"ttl" yaml:"ttl"`
 }
 
 type StorageConfig struct {
@@ -102,8 +108,9 @@ func Load() (*Config, error) {
 
 	// Environment variable support
 	v.SetEnvPrefix("DIDEBAN")
-	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AllowEmptyEnv(false)
+	v.AutomaticEnv()
 
 	// Optional configuration file
 	v.SetConfigName("config")
@@ -121,6 +128,22 @@ func Load() (*Config, error) {
 		if !errors.As(err, &notFound) {
 			return nil, fmt.Errorf("config file error: %w", err)
 		}
+	}
+
+	// Explicitly bind environment variables for nested structures that have mapping issues
+	// Only bind if the environment variable is actually set
+	// This preserves the precedence order: file config still takes precedence over env vars when they're not set
+	if _, exists := os.LookupEnv("DIDEBAN_ALERT_TELEGRAM_TOKEN"); exists {
+		v.BindEnv("alert.telegram.token", "DIDEBAN_ALERT_TELEGRAM_TOKEN")
+	}
+	if _, exists := os.LookupEnv("DIDEBAN_ALERT_TELEGRAM_CHAT_ID"); exists {
+		v.BindEnv("alert.telegram.chat_id", "DIDEBAN_ALERT_TELEGRAM_CHAT_ID")
+	}
+	if _, exists := os.LookupEnv("DIDEBAN_ALERT_BALE_TOKEN"); exists {
+		v.BindEnv("alert.bale.token", "DIDEBAN_ALERT_BALE_TOKEN")
+	}
+	if _, exists := os.LookupEnv("DIDEBAN_ALERT_BALE_CHAT_ID"); exists {
+		v.BindEnv("alert.bale.chat_id", "DIDEBAN_ALERT_BALE_CHAT_ID")
 	}
 
 	// Unmarshal configuration into struct

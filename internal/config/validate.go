@@ -93,6 +93,11 @@ func validateServerConfig(s ServerConfig) error {
 		return fmt.Errorf("server.write_timeout too small (min 1s)")
 	}
 
+	// Validate JWT configuration
+	if err := validateJWTConfig(s.JWT); err != nil {
+		return fmt.Errorf("server.jwt: %w", err)
+	}
+
 	return nil
 }
 
@@ -224,5 +229,39 @@ func validateLogConfig(l LogConfig) error {
 	if !slices.Contains(validLogLevels, strings.ToLower(l.Level)) {
 		return fmt.Errorf("log.level must be one of: debug, info, warn, error, fatal, panic")
 	}
+	return nil
+}
+
+// validateJWTConfig validates JWT configuration.
+func validateJWTConfig(j JWTConfig) error {
+	// Validate JWT secret
+	if j.Secret == "" {
+		return fmt.Errorf("secret cannot be empty")
+	}
+
+	// Security: JWT secret should be strong enough
+	if len(j.Secret) < 32 {
+		return fmt.Errorf("secret too short (minimum 32 characters for security)")
+	}
+
+	// Warn about default secret (security issue)
+	if j.Secret == "your-secret-key-change-this-in-production" {
+		return fmt.Errorf("default secret detected - change this in production for security")
+	}
+
+	// Validate TTL
+	if j.TTL <= 0 {
+		return fmt.Errorf("ttl must be greater than 0")
+	}
+
+	// Reasonable TTL limits
+	if j.TTL < 5*time.Minute {
+		return fmt.Errorf("ttl too small (minimum 5 minutes)")
+	}
+
+	if j.TTL > 30*24*time.Hour { // 30 days
+		return fmt.Errorf("ttl too large (maximum 30 days)")
+	}
+
 	return nil
 }

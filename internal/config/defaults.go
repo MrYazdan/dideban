@@ -9,6 +9,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.read_timeout", "30s")
 	v.SetDefault("server.write_timeout", "30s")
 	v.SetDefault("server.idle_timeout", "60s")
+	v.SetDefault("server.jwt.secret", "your-secret-key-change-this-in-production")
+	v.SetDefault("server.jwt.ttl", "24h")
 
 	// Storage defaults
 	v.SetDefault("storage.path", "dideban.db")
