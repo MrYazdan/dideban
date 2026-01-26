@@ -146,7 +146,7 @@ func ValidateAgent(agent *Agent) error {
 		return fmt.Errorf("agent interval too short (minimum 10 seconds)")
 	}
 
-	if agent.IntervalSeconds > 3600 { // 1 hour
+	if agent.IntervalSeconds > 86400 { // 24 hour
 		return fmt.Errorf("agent interval too long (maximum 1 hour)")
 	}
 
@@ -354,10 +354,6 @@ func ValidateAgentHistory(history *AgentHistory) error {
 	// Validate collection duration
 	if history.CollectDurationMs < 0 {
 		return fmt.Errorf("collect duration cannot be negative")
-	}
-
-	if history.CollectDurationMs > 300000 { // 5 minutes
-		return fmt.Errorf("collect duration too long (max 5 minutes)")
 	}
 
 	// Validate CPU metrics

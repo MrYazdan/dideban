@@ -361,41 +361,125 @@ func (sb *SelectBuilder[T]) populateStruct(item interface{}, columns []string, v
 	return nil
 }
 
-// setFieldValue sets a struct field value from a database value.
+// setFieldValue assigns a database value to a struct field using reflection.
 //
-// This method handles type conversion between database types and Go types.
+// It performs safe type conversion between common database driver types
+// and Go native types. The method supports nullable fields via pointers
+// and recursively initializes pointer values when needed.
+//
+// Supported features:
+// - Nullable fields via pointers (e.g. *time.Time, *string)
+// - Common scalar types (string, int, bool, float)
+// - time.Time and *time.Time
+// - Recursive pointer handling
+//
+// Design notes:
+// - If the database value is NULL and the field is a pointer, the field is set to nil.
+// - If the database value is NULL and the field is not a pointer, the field is left untouched.
+// - Pointer fields are lazily allocated only when a non-NULL value is present.
 func (sb *SelectBuilder[T]) setFieldValue(field reflect.Value, value interface{}) error {
+	// --- Pointer handling (nullable fields) ---
+	if field.Kind() == reflect.Ptr {
+		// Database NULL → Go nil
+		if value == nil {
+			field.Set(reflect.Zero(field.Type()))
+			return nil
+		}
+
+		// Allocate pointee and recursively assign the value
+		elem := reflect.New(field.Type().Elem())
+		if err := sb.setFieldValue(elem.Elem(), value); err != nil {
+			return err
+		}
+
+		field.Set(elem)
+		return nil
+	}
+
+	// Database NULL for non-pointer fields → ignore
 	if value == nil {
-		return nil // Skip nil values
+		return nil
 	}
 
 	switch field.Kind() {
+
+	// --- String types ---
 	case reflect.String:
-		if s, ok := value.(string); ok {
-			field.SetString(s)
-		} else if b, ok := value.([]byte); ok {
-			field.SetString(string(b))
+		switch v := value.(type) {
+		case string:
+			field.SetString(v)
+		case []byte:
+			field.SetString(string(v))
+		default:
+			return fmt.Errorf("cannot assign %T to string field", value)
 		}
-	case reflect.Int, reflect.Int64:
-		if i, ok := value.(int64); ok {
-			field.SetInt(i)
+
+		// --- Integer types ---
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		switch v := value.(type) {
+		case int:
+			field.SetInt(int64(v))
+		case int64:
+			field.SetInt(v)
+		case float64:
+			field.SetInt(int64(v)) // some drivers return numerics as float64
+		default:
+			return fmt.Errorf("cannot assign %T to int field", value)
 		}
+
+		// --- Floating point types ---
+	case reflect.Float32, reflect.Float64:
+		switch v := value.(type) {
+		case float64:
+			field.SetFloat(v)
+		case float32:
+			field.SetFloat(float64(v))
+		case int64:
+			field.SetFloat(float64(v))
+		default:
+			return fmt.Errorf("cannot assign %T to float field", value)
+		}
+
+		// --- Boolean types ---
 	case reflect.Bool:
-		if b, ok := value.(bool); ok {
-			field.SetBool(b)
+		switch v := value.(type) {
+		case bool:
+			field.SetBool(v)
+		case int64:
+			field.SetBool(v != 0) // some DBs represent bool as 0/1
+		default:
+			return fmt.Errorf("cannot assign %T to bool field", value)
 		}
+
+		// --- Struct types ---
 	case reflect.Struct:
+		// Special-case: time.Time
 		if field.Type() == reflect.TypeOf(time.Time{}) {
-			if t, ok := value.(time.Time); ok {
-				field.Set(reflect.ValueOf(t))
-			} else if s, ok := value.(string); ok {
-				if t, err := time.Parse(time.RFC3339, s); err == nil {
-					field.Set(reflect.ValueOf(t))
+			switch v := value.(type) {
+			case time.Time:
+				field.Set(reflect.ValueOf(v))
+			case string:
+				t, err := time.Parse(time.RFC3339, v)
+				if err != nil {
+					return fmt.Errorf("invalid time format: %w", err)
 				}
+				field.Set(reflect.ValueOf(t))
+			case []byte:
+				t, err := time.Parse(time.RFC3339, string(v))
+				if err != nil {
+					return fmt.Errorf("invalid time format: %w", err)
+				}
+				field.Set(reflect.ValueOf(t))
+			default:
+				return fmt.Errorf("cannot assign %T to time.Time field", value)
 			}
+			return nil
 		}
+
+		return fmt.Errorf("unsupported struct type: %s", field.Type())
+
 	default:
-		return fmt.Errorf("unsupported field type: %s", field.Kind())
+		return fmt.Errorf("unsupported field kind: %s", field.Kind())
 	}
 
 	return nil

@@ -106,6 +106,10 @@ type Agent struct {
 	// AuthToken is the authentication token for secure agent communication
 	AuthToken string `db:"auth_token,not_null,unique"`
 
+	// LastSeenAt is the timestamp of the most recent metric received from this agent
+	// NULL means the agent has never reported metrics
+	LastSeenAt *time.Time `db:"last_seen_at,null"`
+
 	// CreatedAt is the timestamp when the agent was first registered
 	CreatedAt time.Time `db:"created_at,not_null"`
 
@@ -126,7 +130,7 @@ type AgentHistory struct {
 	AgentID int64 `db:"agent_id,not_null"`
 
 	// CollectDurationMs is how long it took to collect all metrics (in milliseconds)
-	CollectDurationMs int `db:"collect_duration_ms,not_null"`
+	CollectDurationMs int64 `db:"collect_duration_ms,not_null"`
 
 	// CPULoad1 is the 1-minute load average
 	CPULoad1 float64 `db:"cpu_load_1,not_null"`

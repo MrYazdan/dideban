@@ -171,12 +171,14 @@ func (m *Migrator) registerBuiltinMigrations() {
 				enabled BOOLEAN NOT NULL DEFAULT 1,
 				interval_seconds INTEGER NOT NULL DEFAULT 60,
 				auth_token TEXT NOT NULL UNIQUE,
+				last_seen_at DATETIME NULL,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 			);
 			
 			CREATE INDEX idx_agents_enabled ON agents(enabled);
 			CREATE INDEX idx_agents_auth_token ON agents(auth_token);
+			CREATE INDEX idx_agents_last_seen_at ON agents(last_seen_at);
 		`,
 		DownSQL: `DROP TABLE IF EXISTS agents;`,
 	})
@@ -190,7 +192,6 @@ func (m *Migrator) registerBuiltinMigrations() {
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				agent_id INTEGER NOT NULL,
 				collect_duration_ms INTEGER NOT NULL,
-				status TEXT NOT NULL CHECK (status IN ('online', 'offline') AND length(status) <= 8),
 				cpu_load_1 REAL NOT NULL,
 				cpu_load_5 REAL NOT NULL,
 				cpu_load_15 REAL NOT NULL,
@@ -245,7 +246,12 @@ func (m *Migrator) registerBuiltinMigrations() {
 				enabled BOOLEAN NOT NULL DEFAULT 1,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 				FOREIGN KEY (check_id) REFERENCES checks(id) ON DELETE CASCADE,
-				FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+				FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE,
+				
+				CHECK (
+					check_id IS NOT NULL
+					OR agent_id IS NOT NULL
+				)
 			);
 			
 			CREATE INDEX idx_alerts_check_id ON alerts(check_id);

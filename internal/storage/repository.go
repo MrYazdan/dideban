@@ -238,13 +238,34 @@ func (r *Repository[T, PT]) Count(ctx context.Context, condition string, args ..
 	return builder.Count(ctx)
 }
 
+// AgentRepository provides agent-specific data access methods.
+type AgentRepository struct {
+	*Repository[Agent, *Agent]
+}
+
+// UpdateLastSeenAt updates the agent's last_seen_at timestamp.
+//
+// This is used to track agent liveness based on the most recent
+// successfully received metrics.
+func (r *AgentRepository) UpdateLastSeenAt(ctx context.Context, agentID int64, lastSeen time.Time) error {
+	_, err := r.Repository.orm.db.ExecContext(
+		ctx,
+		`UPDATE agents SET last_seen_at = ?, updated_at = ? WHERE id = ?`,
+		lastSeen,
+		time.Now(),
+		agentID,
+	)
+
+	return err
+}
+
 // Repositories provides access to all repository instances.
 type Repositories struct {
 	Checks       *Repository[Check, *Check]
 	CheckHistory *Repository[CheckHistory, *CheckHistory]
 	Alerts       *Repository[Alert, *Alert]
 	AlertHistory *Repository[AlertHistory, *AlertHistory]
-	Agents       *Repository[Agent, *Agent]
+	Agents       *AgentRepository
 	AgentHistory *Repository[AgentHistory, *AgentHistory]
 	Admins       *Repository[Admin, *Admin]
 }
@@ -256,7 +277,9 @@ func NewRepositories(orm *ORM) *Repositories {
 		CheckHistory: NewRepository[CheckHistory, *CheckHistory](orm),
 		Alerts:       NewRepository[Alert, *Alert](orm),
 		AlertHistory: NewRepository[AlertHistory, *AlertHistory](orm),
-		Agents:       NewRepository[Agent, *Agent](orm),
+		Agents: &AgentRepository{
+			Repository: NewRepository[Agent, *Agent](orm),
+		},
 		AgentHistory: NewRepository[AgentHistory, *AgentHistory](orm),
 		Admins:       NewRepository[Admin, *Admin](orm),
 	}
