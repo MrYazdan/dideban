@@ -42,7 +42,8 @@ type JWTConfig struct {
 }
 
 type StorageConfig struct {
-	Path            string        `mapstructure:"path" yaml:"path"`
+	Driver          string        `mapstructure:"driver" yaml:"driver"`
+	DSN             string        `mapstructure:"dsn" yaml:"dsn"`
 	MaxOpenConns    int           `mapstructure:"max_open_conns" yaml:"max_open_conns"`
 	MaxIdleConns    int           `mapstructure:"max_idle_conns" yaml:"max_idle_conns"`
 	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime" yaml:"conn_max_lifetime"`

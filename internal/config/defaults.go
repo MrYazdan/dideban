@@ -13,7 +13,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.jwt.ttl", "24h")
 
 	// Storage defaults
-	v.SetDefault("storage.path", "dideban.db")
+	v.SetDefault("storage.driver", "sqlite")
+	v.SetDefault("storage.dsn", "dideban.db")
 	v.SetDefault("storage.max_open_conns", 32)
 	v.SetDefault("storage.max_idle_conns", 8)
 	v.SetDefault("storage.conn_max_lifetime", "1h")

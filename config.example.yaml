@@ -30,22 +30,49 @@ server:
     # Env: DIDEBAN_SERVER_JWT_TTL
     ttl: "24h"
 
-# SQLite Database Configuration
+# Database Configuration
+#
+# Dideban supports two database drivers:
+#   - sqlite: for development, testing, and single-node deployments
+#   - postgres: for production, high-availability, and multi-node setups
+#
+# Only one driver should be active at a time.
 storage:
-  # Database file path (default: "dideban.db")
-  # Recommended paths:
-  # - Linux/macOS: "/var/lib/dideban/dideban.db"
-  # - Windows: "C:\\ProgramData\\Dideban\\dideban.db"
-  # Env: DIDEBAN_STORAGE_PATH
-  path: "dideban.db"
-  
-  # Maximum number of open database connections (default: 32)
+  # Database driver to use.
+  # Supported values: "sqlite", "postgres"
+  # Env: DIDEBAN_STORAGE_DRIVER
+  driver: "sqlite"
+
+  # Data Source Name (DSN) for the selected database.
+  #
+  # For SQLite:
+  #   - Path to the database file (relative or absolute)
+  #   - Example: "dideban.db" or "/var/lib/dideban/dideban.db"
+  #
+  # For Postgresql:
+  #   - Standard Postgresql connection string
+  #   - Format: "host=... port=... user=... password=... dbname=... sslmode=..."
+  #   - Example: "host=localhost port=5432 user=dideban password=secret dbname=dideban sslmode=disable"
+  #
+  # Env: DIDEBAN_STORAGE_DSN
+  dsn: "dideban.db"
+
+  # Maximum number of open connections to the database.
+  # Recommended:
+  #   - SQLite: 10–32 (limited by WAL concurrency)
+  #   - Postgresql: 20–100 (based on pool size and workload)
+  # Env: DIDEBAN_STORAGE_MAX_OPEN_CONNS
   max_open_conns: 32
-  
-  # Maximum number of idle connections (default: 8)
+
+  # Maximum number of idle connections in the connection pool.
+  # Should be <= max_open_conns.
+  # Env: DIDEBAN_STORAGE_MAX_IDLE_CONNS
   max_idle_conns: 8
-  
-  # Maximum connection lifetime (default: "1h")
+
+  # Maximum lifetime of a connection before it's closed and replaced.
+  # Helps prevent stale connections in long-running services.
+  # Format: duration string (e.g., "30m", "1h")
+  # Env: DIDEBAN_STORAGE_CONN_MAX_LIFETIME
   conn_max_lifetime: "1h"
 
 # Alert Configuration

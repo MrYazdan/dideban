@@ -101,15 +101,33 @@ func validateServerConfig(s ServerConfig) error {
 	return nil
 }
 
-// validateStorageConfig validates storage configuration.
+// validateStorageConfig validates the storage configuration.
 func validateStorageConfig(s StorageConfig) error {
-	if s.Path == "" {
-		return fmt.Errorf("storage.path cannot be empty")
+	// Validate driver
+	if s.Driver == "" {
+		return fmt.Errorf("storage.driver cannot be empty")
+	}
+	if s.Driver != "sqlite" && s.Driver != "postgres" {
+		return fmt.Errorf("storage.driver must be 'sqlite' or 'postgres'")
 	}
 
-	// Validate path format (basic check)
-	if strings.Contains(s.Path, "..") {
-		return fmt.Errorf("storage.path cannot contain '..' for security")
+	// Validate DSN
+	if s.DSN == "" {
+		return fmt.Errorf("storage.dsn cannot be empty")
+	}
+
+	// For SQLite, perform basic path security validation
+	if s.Driver == "sqlite" {
+		if strings.Contains(s.DSN, "..") {
+			return fmt.Errorf("storage.dsn cannot contain '..' for security (SQLite only)")
+		}
+		// Note: DSN may contain query params like "?_journal_mode=WAL", so we check the path part
+		if dsnParts := strings.Split(s.DSN, "?"); len(dsnParts) > 0 {
+			path := dsnParts[0]
+			if path == "" || path == "/" {
+				return fmt.Errorf("storage.dsn path cannot be empty or root")
+			}
+		}
 	}
 
 	// Validate connection pool settings
