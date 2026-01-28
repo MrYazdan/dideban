@@ -29,13 +29,9 @@ func (e *Engine) AddCheck(check *storage.Check) error {
 	}
 
 	// Save check to storage
-	id, err := e.storage.Repositories().Checks.Create(context.Background(), check)
-	if err != nil {
+	if err := e.storage.DB().Create(check).Error; err != nil {
 		return fmt.Errorf("failed to save check: %w", err)
 	}
-
-	// Update the ID in the original check
-	check.ID = id
 
 	// Schedule the check
 	if err := e.scheduleCheck(check); err != nil {
@@ -98,11 +94,10 @@ func (e *Engine) executeCheck(ctx context.Context, check *storage.Check) error {
 		}
 	}
 
-	// Save result to storage
-	_, err = e.storage.Repositories().CheckHistory.Create(context.Background(), result)
-	if err != nil {
+	// Save result to storage using GORM
+	if err := e.storage.DB().Create(result).Error; err != nil {
 		log.Error().Int64("check_id", check.ID).Err(err).Msg("Failed to save check result")
-		return err
+		return fmt.Errorf("failed to persist check history: %w", err)
 	}
 
 	// Process result for alerting
@@ -118,9 +113,14 @@ func (e *Engine) executeCheck(ctx context.Context, check *storage.Check) error {
 //   - result: Check result to process
 func (e *Engine) processCheckResult(check *storage.Check, result *storage.CheckHistory) {
 	// Get all enabled alerts for this check
-	alerts, err := e.storage.Repositories().Alerts.Where(context.Background(), "check_id = ? AND enabled = ?", check.ID, true)
-	if err != nil {
-		log.Error().Int64("check_id", check.ID).Str("name", check.Name).Err(err).Msg("Failed to retrieve alerts for check")
+	var alerts []storage.Alert
+	if err := e.storage.DB().
+		Where("check_id = ? AND enabled = ?", check.ID, true).
+		Find(&alerts).Error; err != nil {
+		log.Error().Int64("check_id", check.ID).
+			Str("name", check.Name).
+			Err(err).
+			Msg("Failed to retrieve alerts for check")
 		return
 	}
 
@@ -164,100 +164,103 @@ func (e *Engine) processCheckResult(check *storage.Check, result *storage.CheckH
 	}
 }
 
-// GetStatus returns the current status of all checks.
+// checkOfflineAgents performs a periodic health check for all enabled agents.
 //
-// Returns:
-//   - map[int64]*storage.CheckHistory: Latest check results by check ID
-//   - error: Any error that occurred during status retrieval
-func (e *Engine) GetStatus() (map[int64]*storage.CheckHistory, error) {
-	// Get all check results to find the latest for each check
-	allResults, err := e.storage.Repositories().CheckHistory.GetAll(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get all check results: %w", err)
-	}
-
-	// Group results by check ID and keep only the latest for each check
-	latestResults := make(map[int64]storage.CheckHistory)
-	for _, result := range allResults {
-		if existing, exists := latestResults[result.CheckID]; !exists || result.CheckedAt.After(existing.CheckedAt) {
-			latestResults[result.CheckID] = result
-		}
-	}
-
-	statusMap := make(map[int64]*storage.CheckHistory)
-	for checkID, result := range latestResults {
-		resultCopy := result
-		statusMap[checkID] = &resultCopy
-	}
-
-	return statusMap, nil
-}
-
-// checkOfflineAgents checks for agents that haven't reported within their expected interval
-// and creates offline history records for them.
-func (e *Engine) checkOfflineAgents(ctx context.Context) {
-	// Get all enabled agents
-	agents, err := e.storage.Repositories().Agents.Where(ctx, "enabled = ?", true)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to get enabled agents for offline check")
+// This task produces a continuous monitoring timeline by recording an
+// observation for each execution cycle in which an agent is expected to
+// report metrics but does not.
+//
+// If an agent is considered offline at the time of evaluation, an offline
+// agent_history record is created with IsOffline=true. These records may
+// be created repeatedly and intentionally represent missed reporting
+// intervals rather than state transitions.
+//
+// The agent's runtime status is updated to offline when applicable, but
+// repeated offline observations do not cause additional status changes.
+func (e *Engine) checkOfflineAgents() {
+	var agents []storage.Agent
+	if err := e.storage.DB().Where("enabled = ?", true).Find(&agents).Error; err != nil {
+		log.Error().Err(err).Msg("failed to load enabled agents for offline check")
 		return
 	}
 
+	now := time.Now()
+	gracePeriod := 30 * time.Second
+
 	for _, agent := range agents {
-		// Get the latest agent history for this agent (ordered by collected_at DESC, limit 1)
-		latestHistories, err := e.storage.Repositories().AgentHistory.Where(ctx, "agent_id = ? ORDER BY collected_at DESC LIMIT 1", agent.ID)
-		if err != nil {
-			log.Error().Err(err).Int64("agent_id", agent.ID).Msg("Failed to get latest agent history")
+		isOffline := true
+
+		if agent.LastSeenAt != nil {
+			maxAllowedDelay := time.Duration(agent.IntervalSeconds)*time.Second + gracePeriod
+			if now.Sub(*agent.LastSeenAt) <= maxAllowedDelay {
+				isOffline = false
+			}
+		}
+
+		// Agent is online at this check cycle
+		if !isOffline {
 			continue
 		}
 
-		// If no history exists, skip this agent
-		if len(latestHistories) == 0 {
+		// Update agent runtime status if necessary
+		if agent.Status != storage.AgentStatusOffline {
+			agent.Status = storage.AgentStatusOffline
+			if err := e.storage.DB().Save(&agent).Error; err != nil {
+				log.Error().
+					Err(err).
+					Int64("agent_id", agent.ID).
+					Msg("failed to update agent status to offline")
+			}
+		}
+
+		// Record an offline monitoring observation (intentional repetition)
+		history := &storage.AgentHistory{
+			AgentID:            agent.ID,
+			IsOffline:          true,
+			CollectDurationMs:  0,
+			CPULoad1:           0,
+			CPULoad5:           0,
+			CPULoad15:          0,
+			CPUUsagePercent:    0,
+			MemoryTotalMB:      0,
+			MemoryUsedMB:       0,
+			MemoryAvailableMB:  0,
+			MemoryUsagePercent: 0,
+			DiskTotalGB:        0,
+			DiskUsedGB:         0,
+			DiskUsagePercent:   0,
+			CollectedAt:        now,
+		}
+
+		if err := e.storage.DB().Create(history).Error; err != nil {
+			log.Error().
+				Err(err).
+				Int64("agent_id", agent.ID).
+				Msg("failed to create offline agent history")
 			continue
 		}
 
-		latestHistory := &latestHistories[0]
+		log.Debug().
+			Str("agent_name", agent.Name).
+			Int64("history_id", history.ID).
+			Str("status", agent.Status).
+			Bool("offline", history.IsOffline).
+			Msg("Created offline agent history record")
 
-		// Calculate the maximum allowed time based on the agent's interval
-		maxAllowedDuration := time.Duration(agent.IntervalSeconds)*time.Second + 30
+		// Trigger offline alerts (alert engine is responsible for throttling)
+		var alerts []storage.Alert
+		if err := e.storage.DB().
+			Where("agent_id = ? AND enabled = ? AND condition_type = ?", agent.ID, true, "agent_offline").
+			Find(&alerts).Error; err != nil {
+			log.Error().
+				Err(err).
+				Int64("agent_id", agent.ID).
+				Msg("failed to load offline alerts for agent")
+			continue
+		}
 
-		// Check if the latest history is older than the maximum allowed duration
-		if time.Since(latestHistory.CollectedAt) > maxAllowedDuration {
-			// Create an offline history record for this agent with zero values for metrics
-			// This indicates that the agent didn't report and is considered offline
-			offlineHistory := &storage.AgentHistory{
-				AgentID:            agent.ID,
-				CollectDurationMs:  0, // No collection happened
-				CPULoad1:           0,
-				CPULoad5:           0,
-				CPULoad15:          0,
-				CPUUsagePercent:    0,
-				MemoryTotalMB:      0,
-				MemoryUsedMB:       0,
-				MemoryAvailableMB:  0,
-				MemoryUsagePercent: 0,
-				DiskTotalGB:        0,
-				DiskUsedGB:         0,
-				DiskUsagePercent:   0,
-				CollectedAt:        time.Now(),
-			}
-
-			// Save the offline history record
-			if _, err := e.storage.Repositories().AgentHistory.Create(ctx, offlineHistory); err != nil {
-				log.Error().Err(err).Int64("agent_id", agent.ID).Msg("Failed to create offline history record")
-				continue
-			}
-
-			log.Info().Int64("agent_id", agent.ID).Str("agent_name", agent.Name).Msg("Agent marked as offline due to inactivity")
-
-			// Trigger alert if the agent has alert configurations
-			// Check if there are any enabled alerts for this agent
-			alerts, err := e.storage.Repositories().Alerts.Where(context.Background(), "agent_id = ? AND enabled = ? AND condition_type = ?", agent.ID, true, "agent_offline")
-			if err != nil {
-				log.Error().Int64("agent_id", agent.ID).Err(err).Msg("Failed to check for alerts for agent")
-			} else if len(alerts) > 0 {
-				e.triggerAgentOfflineAlert(agent, alerts, offlineHistory)
-			}
+		if len(alerts) > 0 {
+			e.triggerAgentOfflineAlert(agent, alerts, history)
 		}
 	}
 }
@@ -315,7 +318,7 @@ func (e *Engine) processResults(ctx context.Context) {
 			return
 		case <-ticker.C:
 			// Check for offline agents
-			e.checkOfflineAgents(ctx)
+			e.checkOfflineAgents()
 		}
 	}
 }
@@ -363,12 +366,17 @@ func (e *Engine) createAlertHistory(alertID int64, checkResultID *int64, agentMe
 		CreatedAt:     time.Now(),
 	}
 
-	_, err := e.storage.Repositories().AlertHistory.Create(context.Background(), &history)
-	if err != nil {
+	if err := e.storage.DB().Create(&history).Error; err != nil {
 		if checkResultID != nil {
-			log.Error().Int64("alert_id", alertID).Int64("check_result_id", *checkResultID).Err(err).Msg("Failed to create alert history")
+			log.Error().
+				Int64("alert_id", alertID).
+				Int64("check_result_id", *checkResultID).
+				Err(err).Msg("Failed to create alert history")
 		} else if agentMetricID != nil {
-			log.Error().Int64("alert_id", alertID).Int64("alert_history_id", *agentMetricID).Err(err).Msg("Failed to create alert history")
+			log.Error().
+				Int64("alert_id", alertID).
+				Int64("alert_history_id", *agentMetricID).
+				Err(err).Msg("Failed to create alert history")
 		}
 	}
 }

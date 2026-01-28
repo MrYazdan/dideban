@@ -94,8 +94,8 @@ func (e *Engine) Start(ctx context.Context) error {
 	log.Info().Msg("Starting monitoring engine")
 
 	// Load checks
-	allChecks, err := e.storage.Repositories().Checks.Where(context.Background(), "enabled = ?", true)
-	if err != nil {
+	var allChecks []storage.Check
+	if err := e.storage.DB().Where("enabled = ?", true).Find(&allChecks).Error; err != nil {
 		cancel()
 		return fmt.Errorf("failed to load checks: %w", err)
 	}
@@ -103,8 +103,8 @@ func (e *Engine) Start(ctx context.Context) error {
 	log.Info().Int("count", len(allChecks)).Msg("Loaded checks")
 
 	// Load agents
-	allAgents, err := e.storage.Repositories().Agents.Where(context.Background(), "enabled = ?", true)
-	if err != nil {
+	var allAgents []storage.Agent
+	if err := e.storage.DB().Where("enabled = ?", true).Find(&allAgents).Error; err != nil {
 		cancel()
 		return fmt.Errorf("failed to load agents: %w", err)
 	}
