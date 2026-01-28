@@ -1,351 +1,269 @@
-// Package storage defines the data models for Dideban monitoring system.
+// Package storage defines the data models for the Dideban monitoring system.
 //
-// All models use struct tags to define database column mappings and constraints.
-// The ORM uses these tags for automatic query generation and result mapping.
-//
-// Struct Tag Format:
-//
-//	`db:"column_name,constraint1,constraint2"`
-//
-// Supported constraints:
-//   - primary: Marks the field as primary key
-//   - unique: Adds unique constraint
-//   - not_null: Adds NOT NULL constraint
-//   - auto_increment: For auto-incrementing fields
+// All models are designed to work with GORM v2 and follow production-grade
+// conventions for SQLite and Postgresql applications. Each model includes:
+//   - GORM struct tags for precise schema control
+//   - TableName() method for explicit table naming
+//   - Validate() method that delegates to validators.go
+//   - GORM hooks (BeforeCreate, BeforeUpdate) for automatic validation
+//   - Proper use of pointers for nullable fields
+//   - Clear documentation for every field and constant
 package storage
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
-// Check represents a monitoring target (HTTP endpoint, ping target, or agent).
-//
-// This is the core entity in Dideban - everything revolves around checks.
-// Each check defines what to monitor, how often, and what constitutes success/failure.
+// Check represents a monitoring target such as an HTTP endpoint or a ping host.
+// It is the core entity around which checks, alerts, and history are built.
 type Check struct {
-	// ID is the unique identifier for the check
-	ID int64 `db:"id,primary,auto_increment"`
-
-	// Enabled determines if the check is active
-	Enabled bool `db:"enabled,not_null"`
-
-	// Name is a human-readable identifier for the check
-	// Must be unique across all checks
-	Name string `db:"name,not_null,unique"`
-
-	// Type defines the kind of check: 'http', 'ping'
-	Type string `db:"type,not_null"`
-
-	// Config is the configuration for the check (JSON string)
-	Config string `db:"config"`
-
-	// Target is the monitoring target (URL for HTTP, hostname for ping)
-	Target string `db:"target,not_null"`
-
-	// IntervalSeconds defines how often the check should run (in seconds)
-	IntervalSeconds int `db:"interval_seconds,not_null"`
-
-	// TimeoutSeconds defines the maximum time to wait for a response
-	TimeoutSeconds int `db:"timeout_seconds,not_null"`
-
-	// CreatedAt is the timestamp when the check was created
-	CreatedAt time.Time `db:"created_at,not_null"`
-
-	// UpdatedAt is the timestamp when the check was last modified
-	UpdatedAt time.Time `db:"updated_at,not_null"`
+	ID              int64     `gorm:"primaryKey;autoIncrement;not null"`
+	Enabled         bool      `gorm:"not null;default:true"`
+	Name            string    `gorm:"not null;uniqueIndex;size:100"`
+	Type            string    `gorm:"not null;size:10"` // e.g., "http", "ping"
+	Config          string    `gorm:"type:text"`        // JSON-encoded configuration
+	Target          string    `gorm:"not null"`
+	IntervalSeconds int       `gorm:"not null;default:60"`
+	TimeoutSeconds  int       `gorm:"not null;default:30"`
+	CreatedAt       time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt       time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 }
-
-// CheckHistory represents the result of a single check execution.
-//
-// This table stores historical data for all check executions,
-// enabling trend analysis and performance monitoring.
-type CheckHistory struct {
-	// ID is the unique identifier for the check result
-	ID int64 `db:"id,primary,auto_increment"`
-
-	// CheckID references the check that was executed
-	CheckID int64 `db:"check_id,not_null"`
-
-	// Status is the result status: 'up', 'down', 'timeout', or 'error'
-	Status string `db:"status,not_null"`
-
-	// ResponseTimeMs is the response time in milliseconds (for HTTP/ping checks)
-	ResponseTimeMs *int `db:"response_time_ms"`
-
-	// StatusCode is the HTTP status code (for HTTP checks only)
-	StatusCode *int `db:"status_code"`
-
-	// ErrorMessage contains error details if the check failed
-	ErrorMessage *string `db:"error_message"`
-
-	// CheckedAt is the timestamp when the check was executed
-	CheckedAt time.Time `db:"checked_at,not_null"`
-
-	// Check is the associated check (loaded via JOIN queries)
-	Check *Check `db:"-"` // The "-" tag excludes this from database operations
-}
-
-// Agent represents a system monitoring agent.
-//
-// Agents are lightweight processes that collect system metrics
-// and report them back to the Dideban server.
-type Agent struct {
-	// ID is the unique identifier for the agent
-	ID int64 `db:"id,primary,auto_increment"`
-
-	// Name is a human-readable identifier for the agent
-	// Must be unique across all agents
-	Name string `db:"name,not_null,unique"`
-
-	// Enabled determines if the agent is active
-	Enabled bool `db:"enabled,not_null"`
-
-	// IntervalSeconds defines how often the agent should collect metrics (in seconds)
-	IntervalSeconds int `db:"interval_seconds,not_null"`
-
-	// AuthToken is the authentication token for secure agent communication
-	AuthToken string `db:"auth_token,not_null,unique"`
-
-	// LastSeenAt is the timestamp of the most recent metric received from this agent
-	// NULL means the agent has never reported metrics
-	LastSeenAt *time.Time `db:"last_seen_at,null"`
-
-	// CreatedAt is the timestamp when the agent was first registered
-	CreatedAt time.Time `db:"created_at,not_null"`
-
-	// UpdatedAt is the timestamp when the agent was last updated
-	UpdatedAt time.Time `db:"updated_at,not_null"`
-}
-
-// AgentHistory represents a complete metrics snapshot from an agent.
-//
-// Instead of storing individual metrics in separate rows, this stores
-// all metrics from a single collection cycle as structured fields.
-// This reduces database rows from ~13 per collection to 1 per collection.
-type AgentHistory struct {
-	// ID is the unique identifier for the metric record
-	ID int64 `db:"id,primary,auto_increment"`
-
-	// AgentID references the agent that collected this metric
-	AgentID int64 `db:"agent_id,not_null"`
-
-	// CollectDurationMs is how long it took to collect all metrics (in milliseconds)
-	CollectDurationMs int64 `db:"collect_duration_ms,not_null"`
-
-	// CPULoad1 is the 1-minute load average
-	CPULoad1 float64 `db:"cpu_load_1,not_null"`
-
-	// CPULoad5 is the 5-minute load average
-	CPULoad5 float64 `db:"cpu_load_5,not_null"`
-
-	// CPULoad15 is the 15-minute load average
-	CPULoad15 float64 `db:"cpu_load_15,not_null"`
-
-	// CPUUsagePercent is the CPU usage percentage
-	CPUUsagePercent float64 `db:"cpu_usage_percent,not_null"`
-
-	// MemoryTotalMB is the total memory in MB
-	MemoryTotalMB int64 `db:"memory_total_mb,not_null"`
-
-	// MemoryUsedMB is the used memory in MB
-	MemoryUsedMB int64 `db:"memory_used_mb,not_null"`
-
-	// MemoryAvailableMB is the available memory in MB
-	MemoryAvailableMB int64 `db:"memory_available_mb,not_null"`
-
-	// MemoryUsagePercent is the memory usage percentage
-	MemoryUsagePercent float64 `db:"memory_usage_percent,not_null"`
-
-	// DiskTotalGB is the total disk space in GB
-	DiskTotalGB int64 `db:"disk_total_gb,not_null"`
-
-	// DiskUsedGB is the used disk space in GB
-	DiskUsedGB int64 `db:"disk_used_gb,not_null"`
-
-	// DiskUsagePercent is the disk usage percentage
-	DiskUsagePercent float64 `db:"disk_usage_percent,not_null"`
-
-	// CollectedAt is the timestamp when metrics were collected
-	CollectedAt time.Time `db:"collected_at,not_null"`
-
-	// Agent is the associated agent (loaded via JOIN queries)
-	Agent *Agent `db:"-"`
-}
-
-// Alert represents an alert configuration for a check or agent.
-//
-// Alerts define how and when to notify users about check failures or agent issues.
-// Multiple alerts can be configured for a single check or agent.
-type Alert struct {
-	// ID is the unique identifier for the alert
-	ID int64 `db:"id,primary,auto_increment"`
-
-	// CheckID references the check this alert monitors (optional)
-	CheckID *int64 `db:"check_id"`
-
-	// AgentID references the agent this alert monitors (optional)
-	AgentID *int64 `db:"agent_id"`
-
-	// Type defines the alert method: 'telegram', 'bale', 'email', or 'webhook'
-	Type string `db:"type,not_null"`
-
-	// Config contains JSON configuration specific to the alert type
-	// For Telegram: {"token": "...", "chat_id": "..."}
-	// For Email: {"smtp_host": "...", "to": "..."}
-	Config string `db:"config"`
-
-	// ConditionType defines the condition that triggers the alert
-	// For checks: 'status_down', 'status_timeout', 'status_error'
-	// For agents: 'cpu_usage_high', 'memory_usage_high', 'disk_usage_high', 'agent_offline'
-	ConditionType string `db:"condition_type,not_null"`
-
-	// ConditionValue contains the threshold value for the condition (e.g., 75 for 75% disk usage)
-	ConditionValue *float64 `db:"condition_value"`
-
-	// Enabled determines if the alert is active
-	Enabled bool `db:"enabled,not_null"`
-
-	// CreatedAt is the timestamp when the alert was created
-	CreatedAt time.Time `db:"created_at,not_null"`
-
-	// Check is the associated check (loaded via JOIN queries)
-	Check *Check `db:"-"`
-
-	// Agent is the associated agent (loaded via JOIN queries)
-	Agent *Agent `db:"-"`
-}
-
-// AlertHistory represents a record of an alert that was sent.
-//
-// This model stores historical information about alerts that were sent,
-// including when they were sent, what triggered them, and their status.
-type AlertHistory struct {
-	// ID is the unique identifier for the alert history record
-	ID int64 `db:"id,primary,auto_increment"`
-
-	// AlertID references the alert configuration that triggered this record
-	AlertID int64 `db:"alert_id,not_null"`
-
-	// CheckResultID references the check result that triggered the alert (optional)
-	CheckResultID *int64 `db:"check_result_id"`
-
-	// AgentMetricID references the agent metric that triggered the alert (optional)
-	AgentMetricID *int64 `db:"agent_metric_id"`
-
-	// Title is the title of the alert message
-	Title string `db:"title,not_null"`
-
-	// Message is the full alert message that was sent
-	Message string `db:"message,not_null"`
-
-	// Status indicates the status of the alert: 'sent', 'failed', 'pending'
-	Status string `db:"status,not_null"`
-
-	// SentAt is the timestamp when the alert was sent
-	SentAt time.Time `db:"sent_at,not_null"`
-
-	// CreatedAt is the timestamp when the history record was created
-	CreatedAt time.Time `db:"created_at,not_null"`
-}
-
-// Admin represents an administrator user for the Dideban dashboard.
-//
-// Admins can access the web interface to manage checks, agents, and alerts.
-// Passwords should be hashed before storage (bcrypt recommended).
-type Admin struct {
-	// ID is the unique identifier for the admin
-	ID int64 `db:"id,primary,auto_increment"`
-
-	// Username is the login username (must be unique)
-	Username string `db:"username,not_null,unique"`
-
-	// Password is the hashed password (never store plaintext)
-	Password string `db:"password,not_null"`
-
-	// FullName is the admin's display name
-	FullName string `db:"full_name,not_null"`
-}
-
-// TableName methods return the database table name for each model.
-// These are used by the ORM for automatic table name resolution.
 
 // TableName returns the database table name for Check.
-func (*Check) TableName() string {
+func (Check) TableName() string {
 	return "checks"
 }
 
-// Validate validates the Check entity.
+// Validate delegates validation to the external validator function.
 func (c *Check) Validate() error {
 	return ValidateCheck(c)
 }
 
+// BeforeCreate runs before inserting a new Check into the database.
+// It ensures the entity is valid before persistence.
+func (c *Check) BeforeCreate(tx *gorm.DB) error {
+	return c.Validate()
+}
+
+// BeforeUpdate runs before updating an existing Check in the database.
+// It ensures the modified entity remains valid.
+func (c *Check) BeforeUpdate(tx *gorm.DB) error {
+	return c.Validate()
+}
+
+// CheckHistory records the result of a single execution of a Check.
+// It captures performance metrics, status, and errors for historical analysis.
+type CheckHistory struct {
+	ID             int64     `gorm:"primaryKey;autoIncrement;not null"`
+	CheckID        int64     `gorm:"not null;index"`
+	Status         string    `gorm:"not null;size:10"` // e.g., "up", "down", "error", "timeout"
+	ResponseTimeMs *int      `gorm:"null"`             // in milliseconds
+	StatusCode     *int      `gorm:"null"`             // HTTP status code (for HTTP checks)
+	ErrorMessage   *string   `gorm:"null;size:1000"`
+	CheckedAt      time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;index"`
+}
+
 // TableName returns the database table name for CheckHistory.
-func (*CheckHistory) TableName() string {
+func (CheckHistory) TableName() string {
 	return "check_history"
 }
 
-// Validate validates the CheckHistory entity.
+// Validate delegates validation to the external validator function.
 func (ch *CheckHistory) Validate() error {
 	return ValidateCheckHistory(ch)
 }
 
+// BeforeCreate runs before inserting a new CheckHistory record.
+func (ch *CheckHistory) BeforeCreate(tx *gorm.DB) error {
+	return ch.Validate()
+}
+
+// BeforeUpdate runs before updating an existing CheckHistory record.
+func (ch *CheckHistory) BeforeUpdate(tx *gorm.DB) error {
+	return ch.Validate()
+}
+
+// Agent represents a remote monitoring agent that collects system metrics.
+// Agents authenticate via a unique token and report metrics periodically.
+type Agent struct {
+	ID              int64      `gorm:"primaryKey;autoIncrement;not null"`
+	Name            string     `gorm:"not null;uniqueIndex;size:100"`
+	Enabled         bool       `gorm:"not null;default:true"`
+	IntervalSeconds int        `gorm:"not null;default:60"`
+	AuthToken       string     `gorm:"not null;uniqueIndex;size:128"`
+	Status          string     `gorm:"not null;size:7;default:'offline'"` // "online" or "offline"
+	LastSeenAt      *time.Time `gorm:"null;index"`
+	CreatedAt       time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt       time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP"`
+}
+
 // TableName returns the database table name for Agent.
-func (*Agent) TableName() string {
+func (Agent) TableName() string {
 	return "agents"
 }
 
-// Validate validates the Agent entity.
+// Validate delegates validation to the external validator function.
 func (a *Agent) Validate() error {
 	return ValidateAgent(a)
 }
 
+// BeforeCreate runs before inserting a new Agent.
+func (a *Agent) BeforeCreate(tx *gorm.DB) error {
+	return a.Validate()
+}
+
+// BeforeUpdate runs before updating an existing Agent.
+func (a *Agent) BeforeUpdate(tx *gorm.DB) error {
+	return a.Validate()
+}
+
+// AgentHistory captures a full snapshot of system metrics collected by an Agent.
+// One record = one collection cycle, minimizing row count while preserving granularity.
+type AgentHistory struct {
+	ID                 int64     `gorm:"primaryKey;autoIncrement;not null"`
+	IsOffline          bool      `gorm:"not null;default:false;index"`
+	AgentID            int64     `gorm:"not null;index"`
+	CollectDurationMs  int64     `gorm:"not null"`
+	CPULoad1           float64   `gorm:"not null"`
+	CPULoad5           float64   `gorm:"not null"`
+	CPULoad15          float64   `gorm:"not null"`
+	CPUUsagePercent    float64   `gorm:"not null"`
+	MemoryTotalMB      int64     `gorm:"not null"`
+	MemoryUsedMB       int64     `gorm:"not null"`
+	MemoryAvailableMB  int64     `gorm:"not null"`
+	MemoryUsagePercent float64   `gorm:"not null"`
+	DiskTotalGB        int64     `gorm:"not null"`
+	DiskUsedGB         int64     `gorm:"not null"`
+	DiskUsagePercent   float64   `gorm:"not null"`
+	CollectedAt        time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;index"`
+}
+
 // TableName returns the database table name for AgentHistory.
-func (*AgentHistory) TableName() string {
+func (AgentHistory) TableName() string {
 	return "agent_history"
 }
 
-// Validate validates the AgentHistory entity.
+// Validate delegates validation to the external validator function.
 func (ah *AgentHistory) Validate() error {
 	return ValidateAgentHistory(ah)
 }
 
+// BeforeCreate runs before inserting a new AgentHistory record.
+func (ah *AgentHistory) BeforeCreate(tx *gorm.DB) error {
+	return ah.Validate()
+}
+
+// BeforeUpdate runs before updating an existing AgentHistory record.
+func (ah *AgentHistory) BeforeUpdate(tx *gorm.DB) error {
+	return ah.Validate()
+}
+
+// Alert defines a notification rule triggered by check failures or agent anomalies.
+// Each alert is associated with exactly one Check or one Agent (not both).
+type Alert struct {
+	ID             int64     `gorm:"primaryKey;autoIncrement;not null"`
+	CheckID        *int64    `gorm:"null;index"`
+	AgentID        *int64    `gorm:"null;index"`
+	Type           string    `gorm:"not null;size:20"` // e.g., "telegram", "email"
+	Config         string    `gorm:"type:text"`        // JSON-encoded alert-specific config
+	ConditionType  string    `gorm:"not null;size:30"`
+	ConditionValue *float64  `gorm:"null"`
+	Enabled        bool      `gorm:"not null;default:true"`
+	CreatedAt      time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+}
+
 // TableName returns the database table name for Alert.
-func (*Alert) TableName() string {
+func (Alert) TableName() string {
 	return "alerts"
 }
 
-// Validate validates the Alert entity.
+// Validate delegates validation to the external validator function.
 func (a *Alert) Validate() error {
 	return ValidateAlert(a)
 }
 
+// BeforeCreate runs before inserting a new Alert.
+func (a *Alert) BeforeCreate(tx *gorm.DB) error {
+	return a.Validate()
+}
+
+// BeforeUpdate runs before updating an existing Alert.
+func (a *Alert) BeforeUpdate(tx *gorm.DB) error {
+	return a.Validate()
+}
+
+// AlertHistory records the outcome of sent alert (success/failure/pending).
+// It is used for auditing, debugging, and retry logic.
+type AlertHistory struct {
+	ID            int64     `gorm:"primaryKey;autoIncrement;not null"`
+	AlertID       int64     `gorm:"not null;index"`
+	CheckResultID *int64    `gorm:"null;index"`
+	AgentMetricID *int64    `gorm:"null;index"`
+	Title         string    `gorm:"not null;size:200"`
+	Message       string    `gorm:"not null;size:5000"`
+	Status        string    `gorm:"not null;size:20"` // e.g., "sent", "failed"
+	SentAt        time.Time `gorm:"not null;index"`
+	CreatedAt     time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+}
+
 // TableName returns the database table name for AlertHistory.
-func (*AlertHistory) TableName() string {
+func (AlertHistory) TableName() string {
 	return "alert_history"
 }
 
-// Validate validates the AlertHistory entity.
+// Validate delegates validation to the external validator function.
 func (ah *AlertHistory) Validate() error {
 	return ValidateAlertHistory(ah)
 }
 
+// BeforeCreate runs before inserting a new AlertHistory record.
+func (ah *AlertHistory) BeforeCreate(tx *gorm.DB) error {
+	return ah.Validate()
+}
+
+// BeforeUpdate runs before updating an existing AlertHistory record.
+func (ah *AlertHistory) BeforeUpdate(tx *gorm.DB) error {
+	return ah.Validate()
+}
+
+// Admin represents a system administrator with access to the management dashboard.
+// Passwords must be bcrypt-hashed before storage.
+type Admin struct {
+	ID       int64  `gorm:"primaryKey;autoIncrement;not null"`
+	Username string `gorm:"not null;uniqueIndex;size:50"`
+	Password string `gorm:"not null;size:255"` // bcrypt hash
+	FullName string `gorm:"not null;size:100"`
+}
+
 // TableName returns the database table name for Admin.
-func (*Admin) TableName() string {
+func (Admin) TableName() string {
 	return "admins"
 }
 
-// Validate validates the Admin entity.
+// Validate delegates validation to the external validator function.
 func (a *Admin) Validate() error {
 	return ValidateAdmin(a)
 }
 
-// CheckType constants define the supported check types.
+// BeforeCreate runs before inserting a new Admin.
+func (a *Admin) BeforeCreate(tx *gorm.DB) error {
+	return a.Validate()
+}
+
+// BeforeUpdate runs before updating an existing Admin.
+func (a *Admin) BeforeUpdate(tx *gorm.DB) error {
+	return a.Validate()
+}
+
+// CheckType constants define supported monitoring types.
 const (
 	CheckTypeHTTP = "http"
 	CheckTypePing = "ping"
 )
 
-// CheckStatus constants define the possible check result statuses.
+// CheckStatus constants define possible outcomes of a check execution.
 const (
 	CheckStatusUp      = "up"
 	CheckStatusDown    = "down"
@@ -353,7 +271,7 @@ const (
 	CheckStatusTimeout = "timeout"
 )
 
-// AlertType constants define the supported alert types.
+// AlertType constants define supported notification channels.
 const (
 	AlertTypeTelegram = "telegram"
 	AlertTypeBale     = "bale"
@@ -361,14 +279,14 @@ const (
 	AlertTypeWebhook  = "webhook"
 )
 
-// AlertStatus constants define the possible alert history statuses.
+// AlertStatus constants define delivery states of an alert.
 const (
 	AlertStatusSent    = "sent"
 	AlertStatusFailed  = "failed"
 	AlertStatusPending = "pending"
 )
 
-// AgentStatus constants define the possible agent statuses.
+// AgentStatus constants define runtime states of an agent.
 const (
 	AgentStatusOnline  = "online"
 	AgentStatusOffline = "offline"
