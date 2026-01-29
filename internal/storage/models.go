@@ -26,7 +26,7 @@ type Check struct {
 	Config          string    `gorm:"type:text"`        // JSON-encoded configuration
 	Target          string    `gorm:"not null"`
 	IntervalSeconds int       `gorm:"not null;default:60"`
-	TimeoutSeconds  int       `gorm:"not null;default:30"`
+	TimeoutSeconds  int       `gorm:"not null;default:5"`
 	CreatedAt       time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt       time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 }

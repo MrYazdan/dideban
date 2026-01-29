@@ -90,14 +90,14 @@ func ValidateCheck(check *Check) error {
 	}
 
 	// Validate intervals: reasonable bounds and timeout < interval
-	if check.IntervalSeconds < 5 {
-		return fmt.Errorf("check interval too short (minimum 5 seconds)")
+	if check.IntervalSeconds < 10 {
+		return fmt.Errorf("check interval too short (minimum 10 seconds)")
 	}
 	if check.IntervalSeconds > 86400 {
 		return fmt.Errorf("check interval too long (maximum 24 hours)")
 	}
-	if check.TimeoutSeconds < 1 {
-		return fmt.Errorf("check timeout too short (minimum 1 second)")
+	if check.TimeoutSeconds < 5 {
+		return fmt.Errorf("check timeout too short (minimum 5 second)")
 	}
 	if check.TimeoutSeconds > 300 {
 		return fmt.Errorf("check timeout too long (maximum 5 minutes)")
